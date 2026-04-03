@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
@@ -143,17 +144,21 @@ export const useGameStore = create<GameState>()(
 );
 
 export function useWorldSummaries(): WorldSummary[] {
-  return useGameStore((state) =>
-    Object.values(state.worlds)
-      .sort((a, b) => new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf())
-      .map((world) => ({
-        id: world.id,
-        name: world.name,
-        width: world.width,
-        height: world.height,
-        updatedAt: world.updatedAt,
-        generation: world.generation,
-      })),
+  const worlds = useGameStore((state) => state.worlds);
+
+  return useMemo(
+    () =>
+      Object.values(worlds)
+        .sort((a, b) => new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf())
+        .map((world) => ({
+          id: world.id,
+          name: world.name,
+          width: world.width,
+          height: world.height,
+          updatedAt: world.updatedAt,
+          generation: world.generation,
+        })),
+    [worlds],
   );
 }
 
