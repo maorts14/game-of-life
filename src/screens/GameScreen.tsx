@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Info, Minus, Pause, Play, Plus, Shuffle, StepForward, Trash2 } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { PATTERNS } from "../features/game/presets";
+import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
 import { GameCanvas } from "../components/GameCanvas";
-import { paintCell, useGameStore, usePopulation, useSelectedWorld } from "../store/gameStore";
+import { PatternSaveModal } from "../components/PatternSaveModal";
+import { paintCell, useGameStore, usePatterns, usePopulation, useSelectedWorld } from "../store/gameStore";
 
 export function GameScreen() {
   const { worldId } = useParams();
   const world = useSelectedWorld(worldId);
+  const customPatterns = usePatterns();
   const population = usePopulation(worldId);
   const [isPatternPickerOpen, setIsPatternPickerOpen] = useState(false);
   const [hoveredInfoPatternId, setHoveredInfoPatternId] = useState<string | null>(null);
   const [activePatternId, setActivePatternId] = useState<string | null>(null);
+  const [isPatternCaptureMode, setIsPatternCaptureMode] = useState(false);
+  const [pendingPatternCellCount, setPendingPatternCellCount] = useState(0);
+  const [pendingPatternSelection, setPendingPatternSelection] = useState<ReturnType<
+    typeof createPatternFromSelection
+  > | null>(null);
   const isRunning = useGameStore((state) => state.isRunning);
   const speed = useGameStore((state) => state.speed);
   const updateGrid = useGameStore((state) => state.updateGrid);
@@ -21,6 +28,9 @@ export function GameScreen() {
   const setRunning = useGameStore((state) => state.setRunning);
   const setSpeed = useGameStore((state) => state.setSpeed);
   const insertPatternIntoWorld = useGameStore((state) => state.insertPatternIntoWorld);
+  const addCustomPattern = useGameStore((state) => state.addCustomPattern);
+
+  const patterns = [...BUILTIN_PATTERNS, ...customPatterns];
 
   useEffect(() => {
     if (!worldId || !isRunning) {
@@ -42,8 +52,63 @@ export function GameScreen() {
 
   const density = ((population / (world.width * world.height || 1)) * 100).toFixed(1);
 
+  function handleSelectionComplete(selection: {
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+  }) {
+    if (!world) {
+      return;
+    }
+
+    const minX = Math.min(selection.startX, selection.endX);
+    const maxX = Math.max(selection.startX, selection.endX);
+    const minY = Math.min(selection.startY, selection.endY);
+    const maxY = Math.max(selection.startY, selection.endY);
+    let liveCount = 0;
+
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        liveCount += world.grid[y]?.[x] ?? 0;
+      }
+    }
+
+    const created = createPatternFromSelection(world.grid, selection, "__pending__", "__pending__");
+    setIsPatternCaptureMode(false);
+
+    if (!created) {
+      return;
+    }
+
+    setPendingPatternCellCount(liveCount);
+    setPendingPatternSelection(created);
+  }
+
   return (
     <main className="page-fade h-screen overflow-hidden px-3 py-3 xl:px-4 xl:py-4">
+      <PatternSaveModal
+        isOpen={pendingPatternSelection !== null}
+        patternPreview={pendingPatternSelection}
+        onClose={() => {
+          setPendingPatternSelection(null);
+          setPendingPatternCellCount(0);
+        }}
+        onSave={({ name, description }) => {
+          if (!pendingPatternSelection) {
+            return;
+          }
+
+          addCustomPattern({
+            ...pendingPatternSelection,
+            name,
+            description,
+          });
+          setPendingPatternSelection(null);
+          setPendingPatternCellCount(0);
+          setIsPatternPickerOpen(true);
+        }}
+      />
       <div className="flex h-full flex-col rounded-[28px] bg-black/18 px-2 py-2 xl:px-3 xl:py-3">
         <header className="panel ghost-border flex items-center justify-between rounded-[22px] px-4 py-3 xl:px-5 xl:py-3">
           <Link to="/" className="control-button">
@@ -87,6 +152,8 @@ export function GameScreen() {
             <GameCanvas
               grid={world.grid}
               activePatternId={activePatternId}
+              patterns={customPatterns}
+              isSelectionMode={isPatternCaptureMode}
               onToggleCell={(x, y) =>
                 updateGrid(worldId, paintCell(world.grid, x, y, world.grid[y][x] === 1 ? 0 : 1))
               }
@@ -99,23 +166,39 @@ export function GameScreen() {
                 insertPatternIntoWorld(worldId, patternId, x, y);
                 setActivePatternId(null);
               }}
+              onSelectionComplete={handleSelectionComplete}
             />
           </div>
 
           <aside className="panel ghost-border hidden min-h-0 overflow-y-auto rounded-[24px] p-5 xl:flex xl:flex-col">
-            <div className="sticky top-[-20px] z-20 -mx-5 border-b border-white/6 bg-[#1c1b1b] px-5 pb-3 pt-4 shadow-[0_18px_32px_rgba(28,27,27,0.96)]">
+            <div className="sticky top-[-20px] z-20 -mx-5 bg-[#1c1b1b] px-5 pb-0 pt-4 shadow-[0_5px_20px_rgba(28,27,27,0.7)]">
               <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Field Actions</p>
               <button
                 className="control-button mt-6 w-full justify-center py-3"
                 onClick={() => setIsPatternPickerOpen((value) => !value)}
               >
                 {isPatternPickerOpen ? <Minus size={18} /> : <Plus size={18} />}
-                Insert Pattern
+                Patterns
               </button>
             </div>
             <div className="mt-3 flex flex-col gap-3">
+              {isPatternPickerOpen ? (
+                <button
+                  className="rounded-[18px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-4 py-4 text-left transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                  onClick={() => {
+                    setActivePatternId(null);
+                    setIsPatternCaptureMode(true);
+                  }}
+                >
+                  <span className="font-display text-base text-white">New Pattern</span>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Select a range on the board.
+                  </p>
+                </button>
+              ) : null}
               {isPatternPickerOpen
-                ? PATTERNS.map((pattern) => {
+                ? patterns.map((pattern) => {
+                    const hasDescription = pattern.description.trim().length > 0;
                     const isInfoOpen = hoveredInfoPatternId === pattern.id;
 
                     return (
@@ -131,24 +214,26 @@ export function GameScreen() {
                               <span className="font-display text-base text-white">{pattern.name}</span>
                             </div>
                           </button>
-                          <button
-                            className="rounded-full p-1 text-slate-400 transition hover:bg-white/8 hover:text-white"
-                            onMouseEnter={() => setHoveredInfoPatternId(pattern.id)}
-                            onMouseLeave={() =>
-                              setHoveredInfoPatternId((value) => (value === pattern.id ? null : value))
-                            }
-                            aria-label={`About ${pattern.name}`}
-                          >
-                            <Info size={16} />
-                          </button>
+                          {hasDescription ? (
+                            <button
+                              className="rounded-full p-1 text-slate-400 transition hover:bg-white/8 hover:text-white"
+                              onMouseEnter={() => setHoveredInfoPatternId(pattern.id)}
+                              onMouseLeave={() =>
+                                setHoveredInfoPatternId((value) => (value === pattern.id ? null : value))
+                              }
+                              aria-label={`About ${pattern.name}`}
+                            >
+                              <Info size={16} />
+                            </button>
+                          ) : null}
                         </div>
                         <button
                           className="mt-3 block w-full rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
                           onClick={() => setActivePatternId(pattern.id)}
                         >
-                          <PatternPreview patternId={pattern.id} />
+                          <PatternPreview pattern={pattern} />
                         </button>
-                        {isInfoOpen ? (
+                        {hasDescription && isInfoOpen ? (
                           <p className="mt-3 text-xs leading-5 text-slate-400">{pattern.description}</p>
                         ) : null}
                       </div>
@@ -165,7 +250,7 @@ export function GameScreen() {
               </button>
             </div>
 
-            <div className="pt-6">
+            <div className="flex min-h-0 flex-1 flex-col pt-6">
               <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Simulation</p>
               <div className="mt-4 flex flex-col gap-3">
                 <button className="control-button justify-center py-3" onClick={() => stepWorld(worldId)}>
@@ -205,12 +290,11 @@ export function GameScreen() {
                 />
               </div>
 
-              <p className="mt-5 text-[11px] uppercase tracking-[0.25em] text-slate-500">
-                Click a pattern, then click the board to place it from the top-left cell.
-              </p>
-              <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-slate-500">
+              <div className="mt-auto pt-6">
+                <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500">
                 Wheel to zoom. Right-click or middle-drag to pan.
-              </p>
+                </p>
+              </div>
             </div>
           </aside>
         </section>
@@ -219,13 +303,11 @@ export function GameScreen() {
   );
 }
 
-function PatternPreview({ patternId }: { patternId: string }) {
-  const pattern = PATTERNS.find((entry) => entry.id === patternId);
-
-  if (!pattern) {
-    return null;
-  }
-
+function PatternPreview({
+  pattern,
+}: {
+  pattern: { id: string; width: number; height: number; cells: Array<[number, number]> };
+}) {
   const columns = Math.max(pattern.width + 2, 6);
   const rows = Math.max(pattern.height + 2, 6);
   const liveCells = new Set(pattern.cells.map(([x, y]) => `${x + 1}-${y + 1}`));
