@@ -1,15 +1,19 @@
 import { useEffect, useRef } from "react";
-import { computeNextGeneration, randomizeGrid } from "../features/game/engine";
+import { computeNextGeneration, getPopulation, randomizeGrid } from "../features/game/engine";
 import type { Grid } from "../features/game/types";
 
 interface BackgroundLifeCanvasProps {
   className?: string;
   cellSize?: number;
+  density?: number;
+  tickMs?: number;
 }
 
 export function BackgroundLifeCanvas({
   className = "",
   cellSize = 18,
+  density = 0.18,
+  tickMs = 180,
 }: BackgroundLifeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gridRef = useRef<Grid>([]);
@@ -31,19 +35,25 @@ export function BackgroundLifeCanvas({
 
     const canvasElement = canvas;
     const drawingContext = context;
+    let columns = 0;
+    let rows = 0;
+
+    function reseedGrid() {
+      gridRef.current = randomizeGrid(columns, rows, density);
+    }
 
     function resizeCanvas() {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const columns = Math.ceil(width / cellSize);
-      const rows = Math.ceil(height / cellSize);
+      columns = Math.ceil(width / cellSize);
+      rows = Math.ceil(height / cellSize);
 
       canvasElement.width = width * window.devicePixelRatio;
       canvasElement.height = height * window.devicePixelRatio;
       canvasElement.style.width = `${width}px`;
       canvasElement.style.height = `${height}px`;
       drawingContext.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-      gridRef.current = randomizeGrid(columns, rows, 0.18);
+      reseedGrid();
     }
 
     function drawGrid(grid: Grid) {
@@ -71,8 +81,11 @@ export function BackgroundLifeCanvas({
     }
 
     function loop(timestamp: number) {
-      if (timestamp - lastTickRef.current > 180) {
+      if (timestamp - lastTickRef.current > tickMs) {
         gridRef.current = computeNextGeneration(gridRef.current);
+        if (getPopulation(gridRef.current) === 0) {
+          reseedGrid();
+        }
         lastTickRef.current = timestamp;
       }
 
@@ -88,7 +101,7 @@ export function BackgroundLifeCanvas({
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(frameRef.current);
     };
-  }, [cellSize]);
+  }, [cellSize, density, tickMs]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

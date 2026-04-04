@@ -9,7 +9,7 @@ import {
   randomizeGrid,
   setCell,
 } from "../features/game/engine";
-import { seedGlider } from "../features/game/presets";
+import { insertPatternAt } from "../features/game/presets";
 import type { Grid, World, WorldSummary } from "../features/game/types";
 
 const DEFAULT_WORLD_NAME = "Void Core";
@@ -25,7 +25,7 @@ interface GameState {
   stepWorld: (worldId: string) => void;
   randomizeWorld: (worldId: string) => void;
   clearWorld: (worldId: string) => void;
-  seedWorldGlider: (worldId: string) => void;
+  insertPatternIntoWorld: (worldId: string, patternId: string, anchorX: number, anchorY: number) => void;
   setRunning: (isRunning: boolean) => void;
   setSpeed: (speed: number) => void;
 }
@@ -120,11 +120,11 @@ export const useGameStore = create<GameState>()(
             updatedAt: new Date().toISOString(),
           })),
         })),
-      seedWorldGlider: (worldId) =>
+      insertPatternIntoWorld: (worldId, patternId, anchorX, anchorY) =>
         set((state) => ({
           worlds: withUpdatedWorld(state.worlds, worldId, (world) => ({
             ...world,
-            grid: seedGlider(cloneGrid(world.grid)),
+            grid: insertPatternAt(cloneGrid(world.grid), patternId, anchorX, anchorY),
             updatedAt: new Date().toISOString(),
           })),
         })),

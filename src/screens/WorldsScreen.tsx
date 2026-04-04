@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Plus, ArrowRight, Layers3 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, ArrowRight, ArrowLeft, Layers3 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
 import { WorldModal } from "../components/WorldModal";
 import { useGameStore, useWorldSummaries } from "../store/gameStore";
 import { formatDate } from "../utils/formatters";
@@ -24,15 +25,32 @@ export function WorldsScreen() {
   }
 
   return (
-    <main className="page-fade min-h-screen px-8 py-10 xl:px-16">
+    <main className="page-fade relative min-h-screen overflow-hidden px-8 py-10 xl:px-16">
+      <BackgroundLifeCanvas
+        className="absolute inset-0 h-full w-full opacity-55"
+        cellSize={20}
+        density={0.09}
+        tickMs={220}
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,6,0.82)_0%,rgba(6,6,6,0.7)_40%,rgba(6,6,6,0.88)_100%)]" />
       <WorldModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateWorld}
       />
 
-      <div className="mx-auto max-w-7xl">
-        <div className="flex items-end justify-between gap-6">
+      <div className="absolute left-8 top-8 z-10 xl:left-16">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-slate-300 backdrop-blur-md transition hover:border-cyan-300/25 hover:bg-white/[0.06] hover:text-white"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </Link>
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <div className="mt-8 flex items-end justify-between gap-6">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">World Registry</p>
             <h1 className="font-display mt-4 text-5xl text-white">Choose a world</h1>

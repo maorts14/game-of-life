@@ -1,23 +1,49 @@
-import { PointerEvent, useEffect, useMemo, useRef } from "react";
+import { PointerEvent, WheelEvent, useEffect, useMemo, useRef, useState } from "react";
+import { getPatternById } from "../features/game/presets";
 import type { Grid } from "../features/game/types";
 
 interface GameCanvasProps {
   grid: Grid;
   onToggleCell: (x: number, y: number) => void;
   onPaintCell: (x: number, y: number, value: 0 | 1) => void;
+  activePatternId?: string | null;
+  onDropPattern?: (patternId: string, x: number, y: number) => void;
 }
 
-export function GameCanvas({ grid, onToggleCell, onPaintCell }: GameCanvasProps) {
+export function GameCanvas({
+  grid,
+  onToggleCell,
+  onPaintCell,
+  activePatternId,
+  onDropPattern,
+}: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const pointerValueRef = useRef<0 | 1>(1);
   const isPointerDownRef = useRef(false);
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
 
   const metrics = useMemo(() => {
     const width = grid[0]?.length ?? 0;
     const height = grid.length;
+    const viewportWidth =
+      typeof window === "undefined"
+        ? 1400
+        : Math.max(320, window.innerWidth - (window.innerWidth >= 1280 ? 560 : 96));
+    const viewportHeight =
+      typeof window === "undefined"
+        ? 820
+        : Math.max(240, window.innerHeight - (window.innerWidth >= 1280 ? 240 : 220));
     const cellSize = Math.max(
-      10,
-      Math.floor(Math.min(900 / Math.max(width, 1), 720 / Math.max(height, 1))),
+      4,
+      Math.floor(
+        Math.min(viewportWidth / Math.max(width, 1), viewportHeight / Math.max(height, 1)),
+      ),
     );
     return {
       width,
@@ -27,6 +53,31 @@ export function GameCanvas({ grid, onToggleCell, onPaintCell }: GameCanvasProps)
       canvasHeight: height * cellSize,
     };
   }, [grid]);
+
+  useEffect(() => {
+    if (!viewportRef.current) {
+      return undefined;
+    }
+    const viewportElement = viewportRef.current;
+
+    function updateViewportSize() {
+      const rect = viewportElement.getBoundingClientRect();
+      setViewportSize({ width: rect.width, height: rect.height });
+    }
+
+    updateViewportSize();
+    const observer = new ResizeObserver(updateViewportSize);
+    observer.observe(viewportElement);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  }, [metrics.canvasWidth, metrics.canvasHeight]);
+
+  const activePattern = activePatternId ? getPatternById(activePatternId) : undefined;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,16 +118,89 @@ export function GameCanvas({ grid, onToggleCell, onPaintCell }: GameCanvasProps)
         }
       }
     }
-  }, [grid, metrics]);
+
+    if (activePattern && hoverCell) {
+      for (const [offsetX, offsetY] of activePattern.cells) {
+        const previewX = hoverCell.x + offsetX;
+        const previewY = hoverCell.y + offsetY;
+
+        if (
+          previewX < 0 ||
+          previewY < 0 ||
+          previewX >= metrics.width ||
+          previewY >= metrics.height
+        ) {
+          continue;
+        }
+
+        context.fillStyle = "rgba(0, 240, 255, 0.45)";
+        context.fillRect(
+          previewX * metrics.cellSize,
+          previewY * metrics.cellSize,
+          metrics.cellSize - 1,
+          metrics.cellSize - 1,
+        );
+      }
+    }
+  }, [activePattern, grid, hoverCell, metrics]);
+
+  function getBaseOffset(nextScale: number) {
+    return {
+      x: Math.max(0, (viewportSize.width - metrics.canvasWidth * nextScale) / 2),
+      y: Math.max(0, (viewportSize.height - metrics.canvasHeight * nextScale) / 2),
+    };
+  }
+
+  function clampPan(nextScale: number, nextPan: { x: number; y: number }) {
+    const scaledWidth = metrics.canvasWidth * nextScale;
+    const scaledHeight = metrics.canvasHeight * nextScale;
+
+    return {
+      x:
+        scaledWidth <= viewportSize.width
+          ? 0
+          : Math.min(0, Math.max(viewportSize.width - scaledWidth, nextPan.x)),
+      y:
+        scaledHeight <= viewportSize.height
+          ? 0
+          : Math.min(0, Math.max(viewportSize.height - scaledHeight, nextPan.y)),
+    };
+  }
+
+  const baseOffset = getBaseOffset(scale);
+  const transform = `translate(${baseOffset.x + pan.x}px, ${baseOffset.y + pan.y}px) scale(${scale})`;
 
   function resolveCell(event: PointerEvent<HTMLCanvasElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / metrics.cellSize);
-    const y = Math.floor((event.clientY - rect.top) / metrics.cellSize);
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return { x: -1, y: -1 };
+    }
+
+    const localX = (event.clientX - rect.left - baseOffset.x - pan.x) / scale;
+    const localY = (event.clientY - rect.top - baseOffset.y - pan.y) / scale;
+    const x = Math.floor(localX / metrics.cellSize);
+    const y = Math.floor(localY / metrics.cellSize);
     return { x, y };
   }
 
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
+    if (activePattern) {
+      const { x, y } = resolveCell(event);
+      if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
+        return;
+      }
+
+      onDropPattern?.(activePattern.id, x, y);
+      return;
+    }
+
+    if (event.button === 1 || event.button === 2) {
+      isPanningRef.current = true;
+      panStartRef.current = { x: event.clientX - pan.x, y: event.clientY - pan.y };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
+    }
+
     const { x, y } = resolveCell(event);
     if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
       return;
@@ -88,6 +212,27 @@ export function GameCanvas({ grid, onToggleCell, onPaintCell }: GameCanvasProps)
   }
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
+    const nextCell = resolveCell(event);
+    if (
+      nextCell.x >= 0 &&
+      nextCell.y >= 0 &&
+      nextCell.x < metrics.width &&
+      nextCell.y < metrics.height
+    ) {
+      setHoverCell(nextCell);
+    } else if (hoverCell !== null) {
+      setHoverCell(null);
+    }
+
+    if (isPanningRef.current) {
+      const nextPan = clampPan(scale, {
+        x: event.clientX - panStartRef.current.x,
+        y: event.clientY - panStartRef.current.y,
+      });
+      setPan(nextPan);
+      return;
+    }
+
     if (!isPointerDownRef.current) {
       return;
     }
@@ -102,16 +247,55 @@ export function GameCanvas({ grid, onToggleCell, onPaintCell }: GameCanvasProps)
 
   function handlePointerUp() {
     isPointerDownRef.current = false;
+    isPanningRef.current = false;
+  }
+
+  function handleWheel(event: WheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
+
+    const zoomFactor = event.deltaY < 0 ? 1.12 : 0.9;
+    const nextScale = Math.min(4, Math.max(0.5, scale * zoomFactor));
+
+    if (nextScale === scale) {
+      return;
+    }
+
+    const pointerX = event.clientX - rect.left;
+    const pointerY = event.clientY - rect.top;
+    const currentBaseOffset = getBaseOffset(scale);
+    const nextBaseOffset = getBaseOffset(nextScale);
+    const contentX = (pointerX - currentBaseOffset.x - pan.x) / scale;
+    const contentY = (pointerY - currentBaseOffset.y - pan.y) / scale;
+
+    setScale(nextScale);
+    setPan(
+      clampPan(nextScale, {
+        x: pointerX - nextBaseOffset.x - contentX * nextScale,
+        y: pointerY - nextBaseOffset.y - contentY * nextScale,
+      }),
+    );
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      className="glow-pulse max-w-full rounded-[28px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
-    />
+    <div ref={viewportRef} onWheel={handleWheel} className="relative h-full w-full overflow-hidden rounded-[28px]">
+      <canvas
+        ref={canvasRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onContextMenu={(event) => event.preventDefault()}
+        style={{
+          transform,
+          transformOrigin: "top left",
+        }}
+        className="glow-pulse absolute left-0 top-0 rounded-[28px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
+      />
+    </div>
   );
 }

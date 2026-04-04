@@ -1,10 +1,18 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
 
 export function AboutScreen() {
   return (
-    <main className="page-fade min-h-screen px-8 py-10 xl:px-16">
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 gap-10 xl:grid-cols-[0.8fr_1.2fr]">
+    <main className="page-fade relative min-h-screen overflow-hidden px-8 py-10 xl:px-16">
+      <BackgroundLifeCanvas
+        className="absolute inset-0 h-full w-full opacity-55"
+        cellSize={20}
+        density={0.08}
+        tickMs={220}
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,6,0.82)_0%,rgba(6,6,6,0.72)_45%,rgba(6,6,6,0.9)_100%)]" />
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 gap-10 xl:grid-cols-[0.8fr_1.2fr]">
         <div className="flex flex-col justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">The Protocol</p>
