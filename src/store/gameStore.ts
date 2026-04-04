@@ -10,12 +10,14 @@ import {
   setCell,
 } from "../features/game/engine";
 import { insertPatternAt } from "../features/game/presets";
+import type { PatternDefinition } from "../features/game/presets";
 import type { Grid, World, WorldSummary } from "../features/game/types";
 
 const DEFAULT_WORLD_NAME = "Void Core";
 
 interface GameState {
   worlds: Record<string, World>;
+  customPatterns: PatternDefinition[];
   currentWorldId: string | null;
   isRunning: boolean;
   speed: number;
@@ -26,6 +28,7 @@ interface GameState {
   randomizeWorld: (worldId: string) => void;
   clearWorld: (worldId: string) => void;
   insertPatternIntoWorld: (worldId: string, patternId: string, anchorX: number, anchorY: number) => void;
+  addCustomPattern: (pattern: PatternDefinition) => void;
   setRunning: (isRunning: boolean) => void;
   setSpeed: (speed: number) => void;
 }
@@ -65,6 +68,7 @@ export const useGameStore = create<GameState>()(
   persist(
     (set) => ({
       worlds: {},
+      customPatterns: [],
       currentWorldId: null,
       isRunning: false,
       speed: 8,
@@ -124,9 +128,19 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           worlds: withUpdatedWorld(state.worlds, worldId, (world) => ({
             ...world,
-            grid: insertPatternAt(cloneGrid(world.grid), patternId, anchorX, anchorY),
+            grid: insertPatternAt(
+              cloneGrid(world.grid),
+              patternId,
+              anchorX,
+              anchorY,
+              state.customPatterns,
+            ),
             updatedAt: new Date().toISOString(),
           })),
+        })),
+      addCustomPattern: (pattern) =>
+        set((state) => ({
+          customPatterns: [...state.customPatterns, pattern],
         })),
       setRunning: (isRunning) => set({ isRunning }),
       setSpeed: (speed) => set({ speed }),
@@ -136,6 +150,7 @@ export const useGameStore = create<GameState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         worlds: state.worlds,
+        customPatterns: state.customPatterns,
         currentWorldId: state.currentWorldId,
         speed: state.speed,
       }),
@@ -164,6 +179,10 @@ export function useWorldSummaries(): WorldSummary[] {
 
 export function useSelectedWorld(worldId: string | undefined): World | null {
   return useGameStore((state) => (worldId ? state.worlds[worldId] ?? null : null));
+}
+
+export function usePatterns(): PatternDefinition[] {
+  return useGameStore((state) => state.customPatterns);
 }
 
 export function usePopulation(worldId: string | undefined): number {

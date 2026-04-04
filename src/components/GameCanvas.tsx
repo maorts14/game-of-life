@@ -1,5 +1,6 @@
 import { PointerEvent, WheelEvent, useEffect, useMemo, useRef, useState } from "react";
 import { getPatternById } from "../features/game/presets";
+import type { PatternDefinition, SelectionBounds } from "../features/game/presets";
 import type { Grid } from "../features/game/types";
 
 interface GameCanvasProps {
@@ -7,7 +8,10 @@ interface GameCanvasProps {
   onToggleCell: (x: number, y: number) => void;
   onPaintCell: (x: number, y: number, value: 0 | 1) => void;
   activePatternId?: string | null;
+  patterns?: PatternDefinition[];
   onDropPattern?: (patternId: string, x: number, y: number) => void;
+  isSelectionMode?: boolean;
+  onSelectionComplete?: (selection: SelectionBounds) => void;
 }
 
 export function GameCanvas({
@@ -15,7 +19,10 @@ export function GameCanvas({
   onToggleCell,
   onPaintCell,
   activePatternId,
+  patterns = [],
   onDropPattern,
+  isSelectionMode = false,
+  onSelectionComplete,
 }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -27,6 +34,8 @@ export function GameCanvas({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
 
   const metrics = useMemo(() => {
     const width = grid[0]?.length ?? 0;
@@ -77,7 +86,14 @@ export function GameCanvas({
     setPan({ x: 0, y: 0 });
   }, [metrics.canvasWidth, metrics.canvasHeight]);
 
-  const activePattern = activePatternId ? getPatternById(activePatternId) : undefined;
+  const activePattern = activePatternId ? getPatternById(activePatternId, patterns) : undefined;
+
+  useEffect(() => {
+    if (!isSelectionMode) {
+      setSelectionStart(null);
+      setSelectionEnd(null);
+    }
+  }, [isSelectionMode]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -142,7 +158,30 @@ export function GameCanvas({
         );
       }
     }
-  }, [activePattern, grid, hoverCell, metrics]);
+
+    if (isSelectionMode && selectionStart && selectionEnd) {
+      const minX = Math.min(selectionStart.x, selectionEnd.x);
+      const minY = Math.min(selectionStart.y, selectionEnd.y);
+      const maxX = Math.max(selectionStart.x, selectionEnd.x);
+      const maxY = Math.max(selectionStart.y, selectionEnd.y);
+
+      context.fillStyle = "rgba(0, 240, 255, 0.14)";
+      context.fillRect(
+        minX * metrics.cellSize,
+        minY * metrics.cellSize,
+        (maxX - minX + 1) * metrics.cellSize - 1,
+        (maxY - minY + 1) * metrics.cellSize - 1,
+      );
+      context.strokeStyle = "rgba(125, 244, 255, 0.85)";
+      context.lineWidth = 2;
+      context.strokeRect(
+        minX * metrics.cellSize + 1,
+        minY * metrics.cellSize + 1,
+        (maxX - minX + 1) * metrics.cellSize - 3,
+        (maxY - minY + 1) * metrics.cellSize - 3,
+      );
+    }
+  }, [activePattern, grid, hoverCell, isSelectionMode, metrics, selectionEnd, selectionStart]);
 
   function getBaseOffset(nextScale: number) {
     return {
@@ -184,6 +223,18 @@ export function GameCanvas({
   }
 
   function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
+    if (isSelectionMode) {
+      const { x, y } = resolveCell(event);
+      if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
+        return;
+      }
+
+      setSelectionStart({ x, y });
+      setSelectionEnd({ x, y });
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
+    }
+
     if (activePattern) {
       const { x, y } = resolveCell(event);
       if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
@@ -224,6 +275,18 @@ export function GameCanvas({
       setHoverCell(null);
     }
 
+    if (isSelectionMode && selectionStart) {
+      if (
+        nextCell.x >= 0 &&
+        nextCell.y >= 0 &&
+        nextCell.x < metrics.width &&
+        nextCell.y < metrics.height
+      ) {
+        setSelectionEnd(nextCell);
+      }
+      return;
+    }
+
     if (isPanningRef.current) {
       const nextPan = clampPan(scale, {
         x: event.clientX - panStartRef.current.x,
@@ -246,6 +309,17 @@ export function GameCanvas({
   }
 
   function handlePointerUp() {
+    if (isSelectionMode && selectionStart && selectionEnd) {
+      onSelectionComplete?.({
+        startX: selectionStart.x,
+        startY: selectionStart.y,
+        endX: selectionEnd.x,
+        endY: selectionEnd.y,
+      });
+      setSelectionStart(null);
+      setSelectionEnd(null);
+    }
+
     isPointerDownRef.current = false;
     isPanningRef.current = false;
   }
