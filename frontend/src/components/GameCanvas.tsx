@@ -29,6 +29,7 @@ export function GameCanvas({
   const pointerValueRef = useRef<0 | 1>(1);
   const isPointerDownRef = useRef(false);
   const isPanningRef = useRef(false);
+  const isPatternDraggingRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -244,6 +245,13 @@ export function GameCanvas({
         return;
       }
 
+      if (event.pointerType === "touch") {
+        isPatternDraggingRef.current = true;
+        setHoverCell({ x, y });
+        event.currentTarget.setPointerCapture(event.pointerId);
+        return;
+      }
+
       onDropPattern?.(activePattern.id, x, y);
       return;
     }
@@ -290,6 +298,10 @@ export function GameCanvas({
       return;
     }
 
+    if (activePattern && isPatternDraggingRef.current) {
+      return;
+    }
+
     if (isPanningRef.current) {
       const nextPan = clampPan(scale, {
         x: event.clientX - panStartRef.current.x,
@@ -312,6 +324,13 @@ export function GameCanvas({
   }
 
   function handlePointerUp() {
+    if (activePattern && isPatternDraggingRef.current && hoverCell) {
+      onDropPattern?.(activePattern.id, hoverCell.x, hoverCell.y);
+      isPatternDraggingRef.current = false;
+      setHoverCell(null);
+      return;
+    }
+
     if (isSelectionMode && selectionStart && selectionEnd) {
       onSelectionComplete?.({
         startX: selectionStart.x,
@@ -325,6 +344,7 @@ export function GameCanvas({
 
     isPointerDownRef.current = false;
     isPanningRef.current = false;
+    isPatternDraggingRef.current = false;
   }
 
   function handleWheel(event: WheelEvent<HTMLDivElement>) {
@@ -359,7 +379,11 @@ export function GameCanvas({
   }
 
   return (
-    <div ref={viewportRef} onWheel={handleWheel} className="relative h-full w-full overflow-hidden rounded-[28px]">
+    <div
+      ref={viewportRef}
+      onWheel={handleWheel}
+      className="relative h-full w-full overflow-hidden rounded-[28px] touch-none"
+    >
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
@@ -370,6 +394,7 @@ export function GameCanvas({
         style={{
           transform,
           transformOrigin: "top left",
+          touchAction: "none",
         }}
         className="glow-pulse absolute left-0 top-0 rounded-[28px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
       />
