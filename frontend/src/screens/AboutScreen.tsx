@@ -4,7 +4,7 @@ import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
 
 export function AboutScreen() {
   return (
-    <main className="page-fade relative min-h-screen overflow-hidden px-8 py-10 xl:px-16">
+    <main className="page-fade relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
       <BackgroundLifeCanvas
         className="absolute inset-0 h-full w-full opacity-55"
         cellSize={20}
@@ -12,11 +12,11 @@ export function AboutScreen() {
         tickMs={220}
       />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,6,0.82)_0%,rgba(6,6,6,0.72)_45%,rgba(6,6,6,0.9)_100%)]" />
-      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 gap-10 xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-7xl grid-cols-1 gap-8 xl:min-h-[calc(100vh-5rem)] xl:gap-10 xl:grid-cols-[0.8fr_1.2fr]">
         <div className="flex flex-col justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">The Protocol</p>
-            <h1 className="font-display mt-6 text-6xl leading-none text-white">About this simulator</h1>
+            <h1 className="font-display mt-4 text-5xl leading-none text-white sm:mt-6 sm:text-6xl">About this simulator</h1>
           </div>
 
           <Link to="/" className="control-button w-fit">
@@ -25,7 +25,7 @@ export function AboutScreen() {
           </Link>
         </div>
 
-        <div className="panel ghost-border rounded-[32px] px-8 py-10 xl:px-12">
+        <div className="panel ghost-border rounded-[28px] px-5 py-6 sm:rounded-[32px] sm:px-7 sm:py-8 xl:px-12 xl:py-10">
           <section>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">The Origin</p>
             <p className="mt-4 text-lg leading-8 text-slate-200">

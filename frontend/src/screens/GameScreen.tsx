@@ -88,7 +88,7 @@ export function GameScreen() {
   }
 
   return (
-    <main className="page-fade h-screen overflow-hidden px-3 py-3 xl:px-4 xl:py-4">
+    <main className="page-fade min-h-screen overflow-hidden px-2 py-2 sm:px-3 sm:py-3 xl:h-screen xl:px-4 xl:py-4">
       <PatternSaveModal
         isOpen={pendingPatternSelection !== null}
         patternPreview={pendingPatternSelection}
@@ -111,21 +111,22 @@ export function GameScreen() {
           setIsPatternPickerOpen(true);
         }}
       />
-      <div className="flex h-full flex-col rounded-[28px] bg-black/18 px-2 py-2 xl:px-3 xl:py-3">
-        <header className="panel ghost-border flex items-center justify-between rounded-[22px] px-4 py-3 xl:px-5 xl:py-3">
-          <Link to="/" className="control-button">
+      <div className="flex min-h-[calc(100vh-1rem)] flex-col rounded-[24px] bg-black/18 px-2 py-2 sm:min-h-[calc(100vh-1.5rem)] xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
+        <header className="panel ghost-border flex items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
+          <Link to="/" className="control-button px-3 py-2 sm:px-4 sm:py-2.5">
             <ArrowLeft size={18} />
-            Save and Exit
+            <span className="hidden sm:inline">Save and Exit</span>
+            <span className="sm:hidden">Exit</span>
           </Link>
 
-          <div className="text-center">
+          <div className="min-w-0 flex-1 text-center">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Identifier</p>
-            <h1 className="font-display mt-1 text-xl text-white xl:text-2xl">{world.name}</h1>
+            <h1 className="font-display mt-1 truncate text-lg text-white sm:text-xl xl:text-2xl">{world.name}</h1>
           </div>
 
           <div className="text-right">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Generation</p>
-            <p className="font-display mt-1 text-2xl text-white xl:text-3xl">{world.generation}</p>
+            <p className="font-display mt-1 text-xl text-white sm:text-2xl xl:text-3xl">{world.generation}</p>
           </div>
         </header>
 
@@ -150,7 +151,23 @@ export function GameScreen() {
             </div>
           </aside>
 
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-[26px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-0 xl:px-3 xl:pb-3">
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
+            <div className="panel ghost-border mb-2 grid grid-cols-3 gap-2 rounded-[16px] p-2 xl:hidden">
+              <div className="rounded-xl bg-black/25 px-2 py-2 text-center">
+                <p className="font-display text-lg leading-none text-white">{population}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Population</p>
+              </div>
+              <div className="rounded-xl bg-black/25 px-2 py-2 text-center">
+                <p className="font-display text-lg leading-none text-white">{density}%</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Occupancy</p>
+              </div>
+              <div className="rounded-xl bg-black/25 px-2 py-2 text-center">
+                <p className="font-display text-lg leading-none text-white">
+                  {world.width}x{world.height}
+                </p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Grid</p>
+              </div>
+            </div>
             <div className="min-h-0 w-full flex-1">
               <GameCanvas
                 grid={world.grid}
@@ -172,7 +189,7 @@ export function GameScreen() {
                 onSelectionComplete={handleSelectionComplete}
               />
             </div>
-            <div className="flex h-11 items-center justify-center pt-6">
+            <div className="flex h-11 items-center justify-center pt-4 sm:pt-6">
               {activePatternId ? (
                 <button
                   className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
@@ -182,6 +199,83 @@ export function GameScreen() {
                   Cancel
                 </button>
               ) : null}
+            </div>
+            <div className="panel ghost-border mt-2 rounded-[16px] p-3 xl:hidden">
+              <div className="grid grid-cols-2 gap-2">
+                <button className="control-button justify-center py-2" onClick={() => randomizeWorld(worldId)}>
+                  <Shuffle size={16} />
+                  Randomize
+                </button>
+                <button className="control-button justify-center py-2" onClick={() => clearWorld(worldId)}>
+                  <Trash2 size={16} />
+                  Clear
+                </button>
+                <button className="control-button justify-center py-2" onClick={() => stepWorld(worldId)}>
+                  <StepForward size={16} />
+                  Step
+                </button>
+                {isRunning ? (
+                  <button className="control-button justify-center py-2" onClick={() => setRunning(false)}>
+                    <Pause size={16} />
+                    Pause
+                  </button>
+                ) : (
+                  <button
+                    className="control-button justify-center py-2"
+                    data-accent="true"
+                    onClick={() => setRunning(true)}
+                  >
+                    <Play size={16} />
+                    Play
+                  </button>
+                )}
+              </div>
+              <div className="mt-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[10px] uppercase tracking-[0.26em] text-slate-500">Speed</span>
+                  <span className="font-display text-lg text-white">{speed}</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  value={speed}
+                  onChange={(event) => setSpeed(Number(event.target.value))}
+                  className="mt-2 h-1 w-full accent-cyan-300"
+                />
+              </div>
+              <div className="mt-3">
+                <button
+                  className="control-button w-full justify-center py-2"
+                  onClick={() => setIsPatternPickerOpen((value) => !value)}
+                >
+                  {isPatternPickerOpen ? <Minus size={16} /> : <Plus size={16} />}
+                  {isPatternPickerOpen ? "Hide Patterns" : "Patterns"}
+                </button>
+                {isPatternPickerOpen ? (
+                  <div className="mt-2 max-h-36 space-y-2 overflow-y-auto pr-1">
+                    <button
+                      className="w-full rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-3 py-2 text-left text-sm transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                      onClick={() => {
+                        setActivePatternId(null);
+                        setIsPatternCaptureMode(true);
+                      }}
+                    >
+                      New Pattern
+                    </button>
+                    {patterns.map((pattern) => (
+                      <button
+                        key={`mobile-${pattern.id}`}
+                        className="flex w-full items-center justify-between rounded-[14px] bg-white/[0.03] px-3 py-2 text-left transition hover:bg-white/[0.08]"
+                        onClick={() => setActivePatternId(pattern.id)}
+                      >
+                        <span className="truncate pr-2 text-sm text-white">{pattern.name}</span>
+                        <span className="text-xs text-slate-400">{pattern.width}x{pattern.height}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
 
