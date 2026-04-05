@@ -25,7 +25,7 @@ export function WorldsScreen() {
   }
 
   return (
-    <main className="page-fade relative min-h-screen overflow-hidden px-8 py-10 xl:px-16">
+    <main className="page-fade relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 xl:px-16">
       <BackgroundLifeCanvas
         className="absolute inset-0 h-full w-full opacity-55"
         cellSize={20}
@@ -39,7 +39,7 @@ export function WorldsScreen() {
         onCreate={handleCreateWorld}
       />
 
-      <div className="absolute left-8 top-8 z-10 xl:left-16">
+      <div className="absolute left-4 top-6 z-10 sm:left-6 xl:left-16">
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-slate-300 backdrop-blur-md transition hover:border-cyan-300/25 hover:bg-white/[0.06] hover:text-white"
@@ -50,11 +50,11 @@ export function WorldsScreen() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl">
-        <div className="mt-8 flex items-end justify-between gap-6">
+        <div className="mt-16 flex flex-col gap-6 md:mt-8 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">World Registry</p>
-            <h1 className="font-display mt-4 text-5xl text-white">Choose a world</h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-400">
+            <h1 className="font-display mt-4 text-4xl text-white sm:text-5xl">Choose a world</h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">
               Re-enter a saved experiment or initialize a new grid. Each world preserves its last
               observed state in local storage.
             </p>
@@ -62,7 +62,7 @@ export function WorldsScreen() {
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="control-button shrink-0"
+            className="control-button w-full justify-center md:w-auto md:shrink-0"
             data-accent="true"
           >
             <Plus size={18} />
@@ -70,8 +70,8 @@ export function WorldsScreen() {
           </button>
         </div>
 
-        <div className="panel ghost-border mt-12 overflow-hidden rounded-[32px]">
-          <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-8 py-5 text-xs uppercase tracking-[0.35em] text-slate-500">
+        <div className="panel ghost-border mt-10 overflow-hidden rounded-[28px] sm:mt-12 sm:rounded-[32px]">
+          <div className="hidden grid-cols-[2fr_1fr_1fr_auto] gap-4 px-8 py-5 text-xs uppercase tracking-[0.35em] text-slate-500 md:grid">
             <span>World</span>
             <span>Grid Size</span>
             <span>Last Modified</span>
@@ -93,19 +93,38 @@ export function WorldsScreen() {
                 <button
                   key={world.id}
                   onClick={() => handleOpenWorld(world.id)}
-                  className="grid w-full grid-cols-[2fr_1fr_1fr_auto] items-center gap-4 px-8 py-7 text-left transition hover:bg-white/3"
+                  className="w-full text-left transition hover:bg-white/3 md:grid md:grid-cols-[2fr_1fr_1fr_auto] md:items-center md:gap-4 md:px-8 md:py-7"
                 >
-                  <div>
-                    <p className="font-display text-2xl text-white">{world.name}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-500">
-                      Gen {world.generation}
+                  <div className="grid grid-cols-2 gap-3 px-5 py-5 sm:px-6 md:block md:px-0 md:py-0">
+                    <div>
+                      <p className="font-display text-3xl text-white sm:text-2xl">{world.name}</p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-500">
+                        Gen {world.generation}
+                      </p>
+                    </div>
+                    <div className="text-right md:hidden">
+                      <span className="inline-flex rounded-full bg-cyan-300/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-100">
+                        Launch
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-300 md:hidden">
+                      <span className="mr-2 text-xs uppercase tracking-[0.3em] text-slate-500">
+                        Grid
+                      </span>
+                      {world.width} x {world.height}
+                    </p>
+                    <p className="text-sm text-slate-400 md:hidden">
+                      <span className="mr-2 text-xs uppercase tracking-[0.3em] text-slate-500">
+                        Updated
+                      </span>
+                      {formatDate(world.updatedAt)}
                     </p>
                   </div>
-                  <p className="text-sm text-slate-300">
+                  <p className="hidden text-sm text-slate-300 md:block">
                     {world.width} x {world.height}
                   </p>
-                  <p className="text-sm text-slate-400">{formatDate(world.updatedAt)}</p>
-                  <span className="inline-flex justify-end text-cyan-200">
+                  <p className="hidden text-sm text-slate-400 md:block">{formatDate(world.updatedAt)}</p>
+                  <span className="hidden justify-end text-cyan-200 md:inline-flex">
                     <ArrowRight size={20} />
                   </span>
                 </button>
