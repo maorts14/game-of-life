@@ -111,16 +111,16 @@ export function GameScreen() {
           setIsPatternPickerOpen(true);
         }}
       />
-      <div className="flex min-h-[calc(100vh-1rem)] flex-col rounded-[24px] bg-black/18 px-2 py-2 sm:min-h-[calc(100vh-1.5rem)] xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
+      <div className="flex min-h-[calc(100vh-0.25rem)] flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(100vh-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
         <header className="panel ghost-border flex items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
-          <Link to="/" className="control-button px-3 py-2 sm:px-4 sm:py-2.5">
+          <Link to="/" className="control-button px-2.5 py-1.5 text-[14px] sm:px-4 sm:py-2.5 sm:text-[16px]">
             <ArrowLeft size={18} />
             <span className="hidden sm:inline">Save and Exit</span>
             <span className="sm:hidden">Exit</span>
           </Link>
 
           <div className="min-w-0 flex-1 text-center">
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Identifier</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Name</p>
             <h1 className="font-display mt-1 truncate text-lg text-white sm:text-xl xl:text-2xl">{world.name}</h1>
           </div>
 
@@ -130,7 +130,7 @@ export function GameScreen() {
           </div>
         </header>
 
-        <section className="grid min-h-0 flex-1 grid-cols-1 gap-3 py-3 xl:grid-cols-[180px_minmax(0,1fr)_220px]">
+        <section className="grid min-h-0 flex-1 grid-cols-1 gap-1 pt-1 pb-0.5 xl:grid-cols-[180px_minmax(0,1fr)_220px] xl:gap-3 xl:py-3">
           <aside className="panel ghost-border hidden min-h-0 rounded-[24px] p-5 xl:block">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Telemetry</p>
             <div className="mt-6 space-y-6">
@@ -152,20 +152,20 @@ export function GameScreen() {
           </aside>
 
           <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
-            <div className="panel ghost-border mb-2 grid grid-cols-3 gap-2 rounded-[16px] p-2 xl:hidden">
-              <div className="rounded-xl bg-black/25 px-2 py-2 text-center">
-                <p className="font-display text-lg leading-none text-white">{population}</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Population</p>
+            <div className="panel ghost-border mb-0.5 grid grid-cols-3 gap-1 rounded-[16px] px-2 py-1.5 xl:mb-2 xl:hidden">
+              <div className="px-0.5 py-0.5 text-center">
+                <p className="font-display text-base leading-none text-white">{population}</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Population</p>
               </div>
-              <div className="rounded-xl bg-black/25 px-2 py-2 text-center">
-                <p className="font-display text-lg leading-none text-white">{density}%</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Occupancy</p>
+              <div className="px-0.5 py-0.5 text-center">
+                <p className="font-display text-base leading-none text-white">{density}%</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Occupancy</p>
               </div>
-              <div className="rounded-xl bg-black/25 px-2 py-2 text-center">
-                <p className="font-display text-lg leading-none text-white">
+              <div className="px-0.5 py-0.5 text-center">
+                <p className="font-display text-base leading-none text-white">
                   {world.width}x{world.height}
                 </p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Grid</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Grid</p>
               </div>
             </div>
             <div className="min-h-0 w-full flex-1">
@@ -192,7 +192,7 @@ export function GameScreen() {
             <div className="flex h-11 items-center justify-center pt-4 sm:pt-6">
               {activePatternId ? (
                 <button
-                  className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                  className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3.5 py-1.5 text-[13px] text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white sm:px-4 sm:py-2 sm:text-sm"
                   onClick={() => setActivePatternId(null)}
                 >
                   <Trash2 size={16} />
@@ -200,40 +200,52 @@ export function GameScreen() {
                 </button>
               ) : null}
             </div>
-            <div className="panel ghost-border mt-2 rounded-[16px] p-3 xl:hidden">
+            <div className="panel ghost-border mt-2 rounded-[16px] p-2 xl:hidden">
               <div className="grid grid-cols-2 gap-2">
-                <button className="control-button justify-center py-2" onClick={() => randomizeWorld(worldId)}>
-                  <Shuffle size={16} />
+                <button
+                  className="control-button justify-center px-2.5 py-1 text-[12px]"
+                  onClick={() => randomizeWorld(worldId)}
+                >
+                  <Shuffle size={14} />
                   Randomize
                 </button>
-                <button className="control-button justify-center py-2" onClick={() => clearWorld(worldId)}>
-                  <Trash2 size={16} />
+                <button
+                  className="control-button justify-center px-2.5 py-1 text-[12px]"
+                  onClick={() => clearWorld(worldId)}
+                >
+                  <Trash2 size={14} />
                   Clear
                 </button>
-                <button className="control-button justify-center py-2" onClick={() => stepWorld(worldId)}>
-                  <StepForward size={16} />
+                <button
+                  className="control-button justify-center px-2.5 py-1 text-[12px]"
+                  onClick={() => stepWorld(worldId)}
+                >
+                  <StepForward size={14} />
                   Step
                 </button>
                 {isRunning ? (
-                  <button className="control-button justify-center py-2" onClick={() => setRunning(false)}>
-                    <Pause size={16} />
+                  <button
+                    className="control-button justify-center px-2.5 py-1 text-[12px]"
+                    onClick={() => setRunning(false)}
+                  >
+                    <Pause size={14} />
                     Pause
                   </button>
                 ) : (
                   <button
-                    className="control-button justify-center py-2"
+                    className="control-button justify-center px-2.5 py-1 text-[12px]"
                     data-accent="true"
                     onClick={() => setRunning(true)}
                   >
-                    <Play size={16} />
+                    <Play size={14} />
                     Play
                   </button>
                 )}
               </div>
               <div className="mt-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[10px] uppercase tracking-[0.26em] text-slate-500">Speed</span>
-                  <span className="font-display text-lg text-white">{speed}</span>
+                  <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">Speed</span>
+                  <span className="font-display text-base text-white">{speed}</span>
                 </div>
                 <input
                   type="range"
@@ -246,16 +258,16 @@ export function GameScreen() {
               </div>
               <div className="mt-3">
                 <button
-                  className="control-button w-full justify-center py-2"
+                  className="control-button w-full justify-center px-2.5 py-1 text-[12px]"
                   onClick={() => setIsPatternPickerOpen((value) => !value)}
                 >
-                  {isPatternPickerOpen ? <Minus size={16} /> : <Plus size={16} />}
+                  {isPatternPickerOpen ? <Minus size={14} /> : <Plus size={14} />}
                   {isPatternPickerOpen ? "Hide Patterns" : "Patterns"}
                 </button>
                 {isPatternPickerOpen ? (
                   <div className="mt-2 max-h-36 space-y-2 overflow-y-auto pr-1">
                     <button
-                      className="w-full rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-3 py-2 text-left text-sm transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                      className="w-full rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-2.5 py-1 text-left text-[12px] transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
                       onClick={() => {
                         setActivePatternId(null);
                         setIsPatternCaptureMode(true);
@@ -266,11 +278,11 @@ export function GameScreen() {
                     {patterns.map((pattern) => (
                       <button
                         key={`mobile-${pattern.id}`}
-                        className="flex w-full items-center justify-between rounded-[14px] bg-white/[0.03] px-3 py-2 text-left transition hover:bg-white/[0.08]"
+                        className="flex w-full items-center justify-between rounded-[14px] bg-white/[0.03] px-2.5 py-1 text-left transition hover:bg-white/[0.08]"
                         onClick={() => setActivePatternId(pattern.id)}
                       >
-                        <span className="truncate pr-2 text-sm text-white">{pattern.name}</span>
-                        <span className="text-xs text-slate-400">{pattern.width}x{pattern.height}</span>
+                        <span className="truncate pr-2 text-[12px] text-white">{pattern.name}</span>
+                        <span className="text-[11px] text-slate-400">{pattern.width}x{pattern.height}</span>
                       </button>
                     ))}
                   </div>
