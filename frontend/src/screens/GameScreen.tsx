@@ -29,8 +29,10 @@ export function GameScreen() {
   const setSpeed = useGameStore((state) => state.setSpeed);
   const insertPatternIntoWorld = useGameStore((state) => state.insertPatternIntoWorld);
   const addCustomPattern = useGameStore((state) => state.addCustomPattern);
+  const deleteCustomPattern = useGameStore((state) => state.deleteCustomPattern);
 
   const patterns = [...BUILTIN_PATTERNS, ...customPatterns];
+  const customPatternIds = new Set(customPatterns.map((pattern) => pattern.id));
 
   useEffect(() => {
     if (!worldId || !isRunning) {
@@ -148,26 +150,39 @@ export function GameScreen() {
             </div>
           </aside>
 
-          <div className="flex min-h-0 items-center justify-center overflow-hidden rounded-[26px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] p-2 xl:p-3">
-            <GameCanvas
-              grid={world.grid}
-              activePatternId={activePatternId}
-              patterns={customPatterns}
-              isSelectionMode={isPatternCaptureMode}
-              onToggleCell={(x, y) =>
-                updateGrid(worldId, paintCell(world.grid, x, y, world.grid[y][x] === 1 ? 0 : 1))
-              }
-              onPaintCell={(x, y, value) => {
-                if (world.grid[y]?.[x] !== value) {
-                  updateGrid(worldId, paintCell(world.grid, x, y, value));
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-[26px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-0 xl:px-3 xl:pb-3">
+            <div className="min-h-0 w-full flex-1">
+              <GameCanvas
+                grid={world.grid}
+                activePatternId={activePatternId}
+                patterns={customPatterns}
+                isSelectionMode={isPatternCaptureMode}
+                onToggleCell={(x, y) =>
+                  updateGrid(worldId, paintCell(world.grid, x, y, world.grid[y][x] === 1 ? 0 : 1))
                 }
-              }}
-              onDropPattern={(patternId, x, y) => {
-                insertPatternIntoWorld(worldId, patternId, x, y);
-                setActivePatternId(null);
-              }}
-              onSelectionComplete={handleSelectionComplete}
-            />
+                onPaintCell={(x, y, value) => {
+                  if (world.grid[y]?.[x] !== value) {
+                    updateGrid(worldId, paintCell(world.grid, x, y, value));
+                  }
+                }}
+                onDropPattern={(patternId, x, y) => {
+                  insertPatternIntoWorld(worldId, patternId, x, y);
+                  setActivePatternId(null);
+                }}
+                onSelectionComplete={handleSelectionComplete}
+              />
+            </div>
+            <div className="flex h-11 items-center justify-center pt-6">
+              {activePatternId ? (
+                <button
+                  className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                  onClick={() => setActivePatternId(null)}
+                >
+                  <Trash2 size={16} />
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <aside className="panel ghost-border hidden min-h-0 overflow-y-auto rounded-[24px] p-5 xl:flex xl:flex-col">
@@ -200,6 +215,7 @@ export function GameScreen() {
                 ? patterns.map((pattern) => {
                     const hasDescription = pattern.description.trim().length > 0;
                     const isInfoOpen = hoveredInfoPatternId === pattern.id;
+                    const isCustomPattern = customPatternIds.has(pattern.id);
 
                     return (
                       <div key={pattern.id} className="rounded-[18px] bg-white/[0.03] p-3">
@@ -214,21 +230,37 @@ export function GameScreen() {
                               <span className="font-display text-base text-white">{pattern.name}</span>
                             </div>
                           </button>
-                          {hasDescription ? (
-                            <button
-                              className="rounded-full p-1 text-slate-400 transition hover:bg-white/8 hover:text-white"
-                              onMouseEnter={() => setHoveredInfoPatternId(pattern.id)}
-                              onMouseLeave={() =>
-                                setHoveredInfoPatternId((value) => (value === pattern.id ? null : value))
-                              }
-                              aria-label={`About ${pattern.name}`}
-                            >
-                              <Info size={16} />
-                            </button>
-                          ) : null}
+                          <div className="flex items-center gap-1">
+                            {hasDescription ? (
+                              <button
+                                className="rounded-full p-1 text-slate-400 transition hover:bg-white/8 hover:text-white"
+                                onMouseEnter={() => setHoveredInfoPatternId(pattern.id)}
+                                onMouseLeave={() =>
+                                  setHoveredInfoPatternId((value) => (value === pattern.id ? null : value))
+                                }
+                                aria-label={`About ${pattern.name}`}
+                              >
+                                <Info size={16} />
+                              </button>
+                            ) : null}
+                            {isCustomPattern ? (
+                              <button
+                                className="rounded-full bg-red-500/80 p-1.5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_0_0_1px_rgba(185,28,28,0.7),0_0_12px_rgba(220,38,38,0.24)] transition hover:bg-red-500/90 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_0_1px_rgba(185,28,28,0.78),0_0_14px_rgba(220,38,38,0.28)]"
+                                onClick={() => {
+                                  if (activePatternId === pattern.id) {
+                                    setActivePatternId(null);
+                                  }
+                                  deleteCustomPattern(pattern.id);
+                                }}
+                                aria-label={`Delete ${pattern.name}`}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
                         <button
-                          className="mt-3 block w-full rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
+                          className="mt-3 block w-full overflow-hidden rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
                           onClick={() => setActivePatternId(pattern.id)}
                         >
                           <PatternPreview pattern={pattern} />
@@ -308,14 +340,49 @@ function PatternPreview({
 }: {
   pattern: { id: string; width: number; height: number; cells: Array<[number, number]> };
 }) {
-  const columns = Math.max(pattern.width + 2, 6);
-  const rows = Math.max(pattern.height + 2, 6);
-  const liveCells = new Set(pattern.cells.map(([x, y]) => `${x + 1}-${y + 1}`));
+  const maxPreviewWidth = 124;
+  const maxPreviewHeight = 72;
+  const previewOptions = [1, 0]
+    .flatMap((padding) =>
+      [2, 1, 0.5, 0].map((cellGap) => {
+        const columns = Math.max(pattern.width + padding * 2, 1);
+        const rows = Math.max(pattern.height + padding * 2, 1);
+        const cellSize = Math.max(
+          0.5,
+          Math.min(
+            8,
+            Math.min(
+              (maxPreviewWidth - (columns - 1) * cellGap) / columns,
+              (maxPreviewHeight - (rows - 1) * cellGap) / rows,
+            ),
+          ),
+        );
+
+        return { padding, columns, rows, cellSize, cellGap };
+      }),
+    )
+    .sort((left, right) => {
+      if (right.cellSize !== left.cellSize) {
+        return right.cellSize - left.cellSize;
+      }
+
+      if (right.cellGap !== left.cellGap) {
+        return right.cellGap - left.cellGap;
+      }
+
+      return right.padding - left.padding;
+    });
+  const { padding, columns, rows, cellSize, cellGap } = previewOptions[0];
+  const liveCells = new Set(pattern.cells.map(([x, y]) => `${x + padding}-${y + padding}`));
 
   return (
     <div
-      className="mx-auto grid aspect-[2.1/1] max-w-[148px] gap-[2px]"
-      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      className="mx-auto grid justify-center gap-[2px]"
+      style={{
+        gap: `${cellGap}px`,
+        gridTemplateColumns: `repeat(${columns}, ${cellSize}px)`,
+        gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,
+      }}
     >
       {Array.from({ length: columns * rows }, (_, index) => {
         const x = index % columns;

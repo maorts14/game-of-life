@@ -36,21 +36,31 @@ export function AboutScreen() {
           </section>
 
           <section className="mt-10">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">The Rules</p>
+            <div className="mt-4 space-y-1 text-lg leading-8 text-slate-200">
+              <p>Each cell checks its 8 surrounding neighbors and updates its state by the amount of living cells around him.</p>
+              <p>- Less than 2 live: dies from underpopulation.</p>
+              <p>- 2 or 3 live neighbors: survives into the next generation.</p>
+              <p>- More than 3 live neighbors dies from overpopulation.</p>
+              <p>- Any dead cell with exactly 3 live neighbors becomes alive through reproduction.</p>
+            </div>
+          </section>
+
+          <section className="mt-10">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">The Engine</p>
             <p className="mt-4 text-lg leading-8 text-slate-200">
-              This app lets you create worlds, paint cells directly on the simulation canvas, step
-              one generation at a time, run continuous playback, randomize the board, and save each
-              world locally in your browser.
+              This app lets you create worlds, paint cells or add patterns directly on the simulation canvas, randomize the board, step
+              one generation at a time and run continuous playback.
             </p>
           </section>
 
           <section className="mt-10">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Observer Node</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Contact me</p>
             <a
-              href="mailto:developer@example.com"
+              href="mailto:maorts14@gmail.com"
               className="mt-4 inline-flex text-2xl text-cyan-200 transition hover:text-white"
             >
-              developer@example.com
+              maorts14@gmail.com
             </a>
           </section>
         </div>

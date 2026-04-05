@@ -122,9 +122,12 @@ export function insertPatternAt(
     return grid;
   }
 
+  const originX = anchorX - Math.floor(pattern.width / 2);
+  const originY = anchorY - Math.floor(pattern.height / 2);
+
   return pattern.cells.reduce((nextGrid, [x, y]) => {
-    const targetX = anchorX + x;
-    const targetY = anchorY + y;
+    const targetX = originX + x;
+    const targetY = originY + y;
 
     if (targetX < 0 || targetY < 0 || targetX >= width || targetY >= height) {
       return nextGrid;

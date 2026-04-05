@@ -136,9 +136,12 @@ export function GameCanvas({
     }
 
     if (activePattern && hoverCell) {
+      const previewOriginX = hoverCell.x - Math.floor(activePattern.width / 2);
+      const previewOriginY = hoverCell.y - Math.floor(activePattern.height / 2);
+
       for (const [offsetX, offsetY] of activePattern.cells) {
-        const previewX = hoverCell.x + offsetX;
-        const previewY = hoverCell.y + offsetY;
+        const previewX = previewOriginX + offsetX;
+        const previewY = previewOriginY + offsetY;
 
         if (
           previewX < 0 ||

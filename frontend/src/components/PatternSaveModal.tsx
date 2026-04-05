@@ -75,7 +75,7 @@ export function PatternSaveModal({
               <span className="mb-2 block text-sm uppercase tracking-[0.2em] text-slate-400">
                 Trimmed Preview
               </span>
-              <div className="rounded-[18px] border border-white/8 bg-black/20 px-4 py-4">
+              <div className="overflow-hidden rounded-[18px] border border-white/8 bg-black/20 px-2 py-3">
                 <PatternPreview pattern={patternPreview} />
               </div>
             </div>
@@ -96,14 +96,41 @@ export function PatternSaveModal({
 }
 
 function PatternPreview({ pattern }: { pattern: PatternDefinition }) {
-  const columns = Math.max(pattern.width + 2, 6);
-  const rows = Math.max(pattern.height + 2, 6);
-  const liveCells = new Set(pattern.cells.map(([x, y]) => `${x + 1}-${y + 1}`));
-  const cellSize = 10;
+  const maxPreviewWidth = 432;
+  const maxPreviewHeight = 128;
+  const cellGap = 2;
+  const previewOptions = [1, 0]
+    .map((padding) => {
+      const columns = Math.max(pattern.width + padding * 2, 1);
+      const rows = Math.max(pattern.height + padding * 2, 1);
+      const cellSize = Math.max(
+        2,
+        Math.min(
+          10,
+          Math.floor(
+            Math.min(
+              (maxPreviewWidth - (columns - 1) * cellGap) / columns,
+              (maxPreviewHeight - (rows - 1) * cellGap) / rows,
+            ),
+          ),
+        ),
+      );
+
+      return { padding, columns, rows, cellSize };
+    })
+    .sort((left, right) => {
+      if (right.cellSize !== left.cellSize) {
+        return right.cellSize - left.cellSize;
+      }
+
+      return right.padding - left.padding;
+    });
+  const { padding, columns, rows, cellSize } = previewOptions[0];
+  const liveCells = new Set(pattern.cells.map(([x, y]) => `${x + padding}-${y + padding}`));
 
   return (
     <div
-      className="mx-auto grid justify-center gap-[2px]"
+      className="mx-auto grid max-w-full justify-center gap-[2px]"
       style={{
         gridTemplateColumns: `repeat(${columns}, ${cellSize}px)`,
         gridTemplateRows: `repeat(${rows}, ${cellSize}px)`,

@@ -29,6 +29,7 @@ interface GameState {
   clearWorld: (worldId: string) => void;
   insertPatternIntoWorld: (worldId: string, patternId: string, anchorX: number, anchorY: number) => void;
   addCustomPattern: (pattern: PatternDefinition) => void;
+  deleteCustomPattern: (patternId: string) => void;
   setRunning: (isRunning: boolean) => void;
   setSpeed: (speed: number) => void;
 }
@@ -141,6 +142,10 @@ export const useGameStore = create<GameState>()(
       addCustomPattern: (pattern) =>
         set((state) => ({
           customPatterns: [...state.customPatterns, pattern],
+        })),
+      deleteCustomPattern: (patternId) =>
+        set((state) => ({
+          customPatterns: state.customPatterns.filter((pattern) => pattern.id !== patternId),
         })),
       setRunning: (isRunning) => set({ isRunning }),
       setSpeed: (speed) => set({ speed }),

@@ -34,16 +34,12 @@ export function HomeScreen() {
 
           <div className="mt-16 grid max-w-2xl grid-cols-3 gap-6 text-sm text-slate-400">
             <div>
-              <p className="font-display text-3xl text-white">8</p>
-              <p className="mt-2 uppercase tracking-[0.3em]">Neighbor vectors</p>
+              <p className="font-display text-3xl text-white">1</p>
+              <p className="mt-2 uppercase tracking-[0.3em]">Living system</p>
             </div>
             <div>
               <p className="font-display text-3xl text-white">∞</p>
               <p className="mt-2 uppercase tracking-[0.3em]">Emergent outcomes</p>
-            </div>
-            <div>
-              <p className="font-display text-3xl text-white">0</p>
-              <p className="mt-2 uppercase tracking-[0.3em]">Players required</p>
             </div>
           </div>
         </div>
