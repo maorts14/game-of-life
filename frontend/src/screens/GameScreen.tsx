@@ -13,11 +13,12 @@ import {
   Trash2,
   Wrench,
 } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
 import { GameCanvas } from "../components/GameCanvas";
 import type { GameCanvasHandle } from "../components/GameCanvas";
 import { PatternSaveModal } from "../components/PatternSaveModal";
+import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
 import { paintCell, useGameStore, usePatterns, usePopulation, useSelectedWorld } from "../store/gameStore";
 
 export function GameScreen() {
@@ -163,14 +164,13 @@ export function GameScreen() {
       />
       <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(100vh-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
         <header className="panel ghost-border flex items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
-          <Link
+          <ResponsiveIconButton
             to="/"
-            className="flex shrink-0 flex-col items-center justify-center gap-1 px-1.5 py-1 text-slate-300 transition hover:text-white sm:control-button sm:min-w-0 sm:flex-row sm:rounded-full sm:px-4 sm:py-2.5 sm:text-[16px] sm:text-inherit"
-          >
-            <ArrowLeft size={18} />
-            <span className="whitespace-nowrap text-[9px] uppercase tracking-[0.14em] sm:hidden">Exit</span>
-            <span className="hidden sm:inline">Save and Exit</span>
-          </Link>
+            icon={<ArrowLeft size={18} />}
+            mobileLabel="Exit"
+            desktopLabel="Save and Exit"
+            className="px-1.5 py-1"
+          />
 
           <div className="min-w-0 flex-1 text-center">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Name</p>
@@ -346,69 +346,58 @@ export function GameScreen() {
 
                 <div className="panel ghost-border rounded-[18px] px-2 py-1.5">
                   <div className="mb-1.5 flex items-center justify-center gap-2">
-                    <button
-                      className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
+                    <ResponsiveIconButton
+                      icon={<StepForward size={16} />}
+                      mobileLabel="Step"
                       onClick={() => stepWorld(worldId)}
-                    >
-                      <StepForward size={16} />
-                      <span className="text-[9px] uppercase tracking-[0.14em]">Step</span>
-                    </button>
+                      className="min-w-[60px]"
+                    />
 
                     {isRunning ? (
-                      <button
-                        className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
+                      <ResponsiveIconButton
+                        icon={<Pause size={16} />}
+                        mobileLabel="Pause"
                         onClick={() => setRunning(false)}
-                      >
-                        <Pause size={16} />
-                        <span className="text-[9px] uppercase tracking-[0.14em]">Pause</span>
-                      </button>
+                        className="min-w-[60px]"
+                      />
                     ) : (
-                      <button
-                        className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-cyan-400/16 px-2 py-1.5 text-cyan-100 transition hover:bg-cyan-400/22"
+                      <ResponsiveIconButton
+                        icon={<Play size={16} />}
+                        mobileLabel="Play"
                         onClick={() => setRunning(true)}
-                      >
-                        <Play size={16} />
-                        <span className="text-[9px] uppercase tracking-[0.14em]">Play</span>
-                      </button>
+                        accent
+                        className="min-w-[60px]"
+                      />
                     )}
                   </div>
 
                   <div className="flex justify-center gap-1.5 overflow-x-auto pb-0.5">
-                    <button
-                      className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
-                        mobileControlPanel === "speed" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
-                      }`}
+                    <ResponsiveIconButton
+                      icon={<Gauge size={16} />}
+                      mobileLabel="Speed"
+                      active={mobileControlPanel === "speed"}
                       onClick={() =>
                         setMobileControlPanel((value) => (value === "speed" ? null : "speed"))
                       }
-                    >
-                      <Gauge size={16} />
-                      <span className="text-[9px] uppercase tracking-[0.14em]">Speed</span>
-                    </button>
+                    />
 
-                    <button
-                      className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
-                        mobileControlPanel === "actions" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
-                      }`}
+                    <ResponsiveIconButton
+                      icon={<Wrench size={16} />}
+                      mobileLabel="Actions"
+                      active={mobileControlPanel === "actions"}
                       onClick={() =>
                         setMobileControlPanel((value) => (value === "actions" ? null : "actions"))
                       }
-                    >
-                      <Wrench size={16} />
-                      <span className="text-[9px] uppercase tracking-[0.14em]">Actions</span>
-                    </button>
+                    />
 
-                    <button
-                      className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
-                        mobileControlPanel === "patterns" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
-                      }`}
+                    <ResponsiveIconButton
+                      icon={<Shapes size={16} />}
+                      mobileLabel="Patterns"
+                      active={mobileControlPanel === "patterns"}
                       onClick={() =>
                         setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))
                       }
-                    >
-                      <Shapes size={16} />
-                      <span className="text-[9px] uppercase tracking-[0.14em]">Patterns</span>
-                    </button>
+                    />
                   </div>
                 </div>
               </div>

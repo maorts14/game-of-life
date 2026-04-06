@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Plus, ArrowRight, ArrowLeft, Layers3 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
+import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
 import { WorldModal } from "../components/WorldModal";
 import { useGameStore, useWorldSummaries } from "../store/gameStore";
 import { formatDate } from "../utils/formatters";
@@ -40,13 +41,13 @@ export function WorldsScreen() {
       />
 
       <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-6 xl:left-16 xl:top-8">
-        <Link
+        <ResponsiveIconButton
           to="/"
-          className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-slate-300 backdrop-blur-md transition hover:border-cyan-300/25 hover:bg-white/[0.06] hover:text-white"
-        >
-          <ArrowLeft size={16} />
-          Back
-        </Link>
+          icon={<ArrowLeft size={16} />}
+          mobileLabel="Back"
+          desktopLabel="Back"
+          className="backdrop-blur-md"
+        />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl">
@@ -60,14 +61,14 @@ export function WorldsScreen() {
             </p>
           </div>
 
-          <button
+          <ResponsiveIconButton
+            icon={<Plus size={18} />}
+            mobileLabel="Create"
+            desktopLabel="Create New World"
             onClick={() => setIsModalOpen(true)}
-            className="control-button w-full justify-center sm:w-fit sm:shrink-0"
-            data-accent="true"
-          >
-            <Plus size={18} />
-            Create New World
-          </button>
+            accent
+            className="w-full sm:w-fit sm:shrink-0" 
+            />
         </div>
 
         <div className="panel ghost-border mt-8 overflow-hidden rounded-[24px] sm:mt-10 sm:rounded-[32px]">
