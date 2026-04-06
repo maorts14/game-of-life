@@ -163,10 +163,13 @@ export function GameScreen() {
       />
       <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(100vh-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
         <header className="panel ghost-border flex items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
-          <Link to="/" className="control-button px-2.5 py-1.5 text-[14px] sm:px-4 sm:py-2.5 sm:text-[16px]">
+          <Link
+            to="/"
+            className="flex shrink-0 flex-col items-center justify-center gap-1 px-1.5 py-1 text-slate-300 transition hover:text-white sm:control-button sm:min-w-0 sm:flex-row sm:rounded-full sm:px-4 sm:py-2.5 sm:text-[16px] sm:text-inherit"
+          >
             <ArrowLeft size={18} />
+            <span className="whitespace-nowrap text-[9px] uppercase tracking-[0.14em] sm:hidden">Exit</span>
             <span className="hidden sm:inline">Save and Exit</span>
-            <span className="sm:hidden">Exit</span>
           </Link>
 
           <div className="min-w-0 flex-1 text-center">
