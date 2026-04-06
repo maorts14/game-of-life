@@ -1,5 +1,18 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Info, Minus, Pause, Play, Plus, Shuffle, StepForward, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Gauge,
+  Info,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  Shapes,
+  Shuffle,
+  StepForward,
+  Trash2,
+  Wrench,
+} from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
 import { GameCanvas } from "../components/GameCanvas";
@@ -15,6 +28,7 @@ export function GameScreen() {
   const [hoveredInfoPatternId, setHoveredInfoPatternId] = useState<string | null>(null);
   const [activePatternId, setActivePatternId] = useState<string | null>(null);
   const [isPatternCaptureMode, setIsPatternCaptureMode] = useState(false);
+  const [mobileControlPanel, setMobileControlPanel] = useState<"speed" | "actions" | "patterns" | null>(null);
   const [pendingPatternCellCount, setPendingPatternCellCount] = useState(0);
   const [pendingPatternSelection, setPendingPatternSelection] = useState<ReturnType<
     typeof createPatternFromSelection
@@ -200,93 +214,144 @@ export function GameScreen() {
                 </button>
               ) : null}
             </div>
-            <div className="panel ghost-border mt-2 rounded-[16px] p-2 xl:hidden">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  className="control-button justify-center px-2.5 py-1 text-[12px]"
-                  onClick={() => randomizeWorld(worldId)}
-                >
-                  <Shuffle size={14} />
-                  Randomize
-                </button>
-                <button
-                  className="control-button justify-center px-2.5 py-1 text-[12px]"
-                  onClick={() => clearWorld(worldId)}
-                >
-                  <Trash2 size={14} />
-                  Clear
-                </button>
-                <button
-                  className="control-button justify-center px-2.5 py-1 text-[12px]"
-                  onClick={() => stepWorld(worldId)}
-                >
-                  <StepForward size={14} />
-                  Step
-                </button>
-                {isRunning ? (
-                  <button
-                    className="control-button justify-center px-2.5 py-1 text-[12px]"
-                    onClick={() => setRunning(false)}
-                  >
-                    <Pause size={14} />
-                    Pause
-                  </button>
-                ) : (
-                  <button
-                    className="control-button justify-center px-2.5 py-1 text-[12px]"
-                    data-accent="true"
-                    onClick={() => setRunning(true)}
-                  >
-                    <Play size={14} />
-                    Play
-                  </button>
-                )}
-              </div>
-              <div className="mt-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">Speed</span>
-                  <span className="font-display text-base text-white">{speed}</span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={20}
-                  value={speed}
-                  onChange={(event) => setSpeed(Number(event.target.value))}
-                  className="mt-2 h-1 w-full accent-cyan-300"
-                />
-              </div>
-              <div className="mt-3">
-                <button
-                  className="control-button w-full justify-center px-2.5 py-1 text-[12px]"
-                  onClick={() => setIsPatternPickerOpen((value) => !value)}
-                >
-                  {isPatternPickerOpen ? <Minus size={14} /> : <Plus size={14} />}
-                  {isPatternPickerOpen ? "Hide Patterns" : "Patterns"}
-                </button>
-                {isPatternPickerOpen ? (
-                  <div className="mt-2 max-h-36 space-y-2 overflow-y-auto pr-1">
-                    <button
-                      className="w-full rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-2.5 py-1 text-left text-[12px] transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
-                      onClick={() => {
-                        setActivePatternId(null);
-                        setIsPatternCaptureMode(true);
-                      }}
-                    >
-                      New Pattern
-                    </button>
-                    {patterns.map((pattern) => (
+            <div className="mt-2 xl:hidden">
+              {mobileControlPanel ? (
+                <div className="panel ghost-border mb-2 rounded-[16px] px-2 py-2">
+                  {mobileControlPanel === "speed" ? (
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">Speed</span>
+                        <span className="font-display text-base text-white">{speed}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={20}
+                        value={speed}
+                        onChange={(event) => setSpeed(Number(event.target.value))}
+                        className="mt-2 h-1 w-full accent-cyan-300"
+                      />
+                    </div>
+                  ) : null}
+
+                  {mobileControlPanel === "actions" ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
                       <button
-                        key={`mobile-${pattern.id}`}
-                        className="flex w-full items-center justify-between rounded-[14px] bg-white/[0.03] px-2.5 py-1 text-left transition hover:bg-white/[0.08]"
-                        onClick={() => setActivePatternId(pattern.id)}
+                        className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
+                        onClick={() => randomizeWorld(worldId)}
                       >
-                        <span className="truncate pr-2 text-[12px] text-white">{pattern.name}</span>
-                        <span className="text-[11px] text-slate-400">{pattern.width}x{pattern.height}</span>
+                        <Shuffle size={14} />
+                        Randomize
                       </button>
-                    ))}
-                  </div>
-                ) : null}
+                      <button
+                        className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
+                        onClick={() => clearWorld(worldId)}
+                      >
+                        <Trash2 size={14} />
+                        Clear
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {mobileControlPanel === "patterns" ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      <button
+                        className="shrink-0 rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-2.5 py-1 text-left text-[12px] text-white transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                        onClick={() => {
+                          setActivePatternId(null);
+                          setIsPatternCaptureMode(true);
+                        }}
+                      >
+                        New Pattern
+                      </button>
+                      {patterns.map((pattern) => (
+                        <button
+                          key={`mobile-${pattern.id}`}
+                          className={`shrink-0 rounded-[14px] px-3 py-1 text-left transition ${
+                            activePatternId === pattern.id
+                              ? "bg-cyan-300/18 text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
+                              : "bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                          }`}
+                          onClick={() => setActivePatternId(pattern.id)}
+                        >
+                          <span className="block truncate text-[12px]">{pattern.name}</span>
+                          <span className="mt-0.5 block text-[10px] text-slate-400">
+                            {pattern.width}x{pattern.height}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="panel ghost-border rounded-[18px] px-2 py-1.5">
+                <div className="mb-1.5 flex items-center justify-center gap-2">
+                  <button
+                    className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
+                    onClick={() => stepWorld(worldId)}
+                  >
+                    <StepForward size={16} />
+                    <span className="text-[9px] uppercase tracking-[0.14em]">Step</span>
+                  </button>
+
+                  {isRunning ? (
+                    <button
+                      className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
+                      onClick={() => setRunning(false)}
+                    >
+                      <Pause size={16} />
+                      <span className="text-[9px] uppercase tracking-[0.14em]">Pause</span>
+                    </button>
+                  ) : (
+                    <button
+                      className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-cyan-400/16 px-2 py-1.5 text-cyan-100 transition hover:bg-cyan-400/22"
+                      onClick={() => setRunning(true)}
+                    >
+                      <Play size={16} />
+                      <span className="text-[9px] uppercase tracking-[0.14em]">Play</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex justify-center gap-1.5 overflow-x-auto pb-0.5">
+                  <button
+                    className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
+                      mobileControlPanel === "speed" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
+                    }`}
+                    onClick={() =>
+                      setMobileControlPanel((value) => (value === "speed" ? null : "speed"))
+                    }
+                  >
+                    <Gauge size={16} />
+                    <span className="text-[9px] uppercase tracking-[0.14em]">Speed</span>
+                  </button>
+
+                  <button
+                    className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
+                      mobileControlPanel === "actions" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
+                    }`}
+                    onClick={() =>
+                      setMobileControlPanel((value) => (value === "actions" ? null : "actions"))
+                    }
+                  >
+                    <Wrench size={16} />
+                    <span className="text-[9px] uppercase tracking-[0.14em]">Actions</span>
+                  </button>
+
+                  <button
+                    className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
+                      mobileControlPanel === "patterns" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
+                    }`}
+                    onClick={() =>
+                      setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))
+                    }
+                  >
+                    <Shapes size={16} />
+                    <span className="text-[9px] uppercase tracking-[0.14em]">Patterns</span>
+                  </button>
+
+                </div>
               </div>
             </div>
           </div>
