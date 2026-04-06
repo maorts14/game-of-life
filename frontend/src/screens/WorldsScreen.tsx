@@ -46,16 +46,16 @@ export function WorldsScreen() {
           icon={<ArrowLeft size={16} />}
           mobileLabel="Back"
           desktopLabel="Back"
-          className="backdrop-blur-md"
+          className="!min-w-0 !gap-0.5 backdrop-blur-md !px-0.5 !py-1"
         />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl">
-        <div className="mt-24 flex flex-col gap-6 sm:mt-20 xl:mt-8 xl:flex-row xl:items-end xl:justify-between">
+        <div className="mt-14 flex flex-col gap-3 sm:mt-20 sm:gap-6 xl:mt-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">World Registry</p>
-            <h1 className="font-display mt-3 text-4xl text-white sm:text-5xl">Choose a world</h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-400">
+            <h1 className="font-display mt-2 text-4xl text-white sm:mt-3 sm:text-5xl">Choose a world</h1>
+            <p className="mt-2 max-w-2xl text-base leading-7 text-slate-400">
               Re-enter a saved experiment or initialize a new grid. Each world preserves its last
               observed state in local storage.
             </p>
@@ -67,11 +67,11 @@ export function WorldsScreen() {
             desktopLabel="Create New World"
             onClick={() => setIsModalOpen(true)}
             accent
-            className="w-full sm:w-fit sm:shrink-0" 
-            />
+            className="mx-auto w-3/5 min-w-[160px] px-3 py-1 sm:mx-0 sm:w-fit sm:shrink-0"
+          />
         </div>
 
-        <div className="panel ghost-border mt-8 overflow-hidden rounded-[24px] sm:mt-10 sm:rounded-[32px]">
+        <div className="panel ghost-border mt-3 overflow-hidden rounded-[24px] sm:mt-10 sm:rounded-[32px]">
           <div className="hidden grid-cols-[2fr_1fr_1fr_auto] gap-4 px-8 py-5 text-xs uppercase tracking-[0.35em] text-slate-500 md:grid">
             <span>World</span>
             <span>Grid Size</span>

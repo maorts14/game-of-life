@@ -18,6 +18,7 @@ export function AboutScreen() {
           icon={<ArrowLeft size={18} />}
           mobileLabel="Home"
           desktopLabel="Return Home"
+          className="!min-w-0 !gap-0.5 !px-0.5 !py-1"
         />
       </div>
       <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-7xl grid-cols-1 gap-8 pt-14 sm:pt-0 xl:min-h-[calc(100vh-5rem)] xl:gap-10 xl:grid-cols-[0.8fr_1.2fr]">

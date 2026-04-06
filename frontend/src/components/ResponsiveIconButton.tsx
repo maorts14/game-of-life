@@ -28,11 +28,15 @@ function joinClasses(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-function getButtonClasses({ accent, active, className }: Pick<CommonProps, "accent" | "active" | "className">) {
+function getButtonClasses({
+  accent,
+  active,
+  className,
+}: Pick<CommonProps, "accent" | "active" | "className">) {
   return joinClasses(
-    "flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition",
+    "flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-1.5 py-1 text-slate-300 transition",
     accent
-      ? "bg-cyan-400/16 text-cyan-100 hover:bg-cyan-400/22"
+      ? "border-transparent bg-[radial-gradient(circle_at_top,rgba(125,244,255,0.5),rgba(0,240,255,0.85))] text-[#00292d] hover:brightness-110"
       : active
         ? "bg-white/[0.08] text-cyan-200"
         : "hover:bg-white/[0.04] hover:text-white",
@@ -62,14 +66,19 @@ export function ResponsiveIconButton(props: ResponsiveIconButtonProps) {
 
   if ("to" in props && props.to) {
     return (
-      <Link to={props.to} className={getButtonClasses(props)}>
+      <Link to={props.to} className={getButtonClasses(props)} data-accent={props.accent ? "true" : undefined}>
         {content}
       </Link>
     );
   }
 
   return (
-    <button type={props.type ?? "button"} onClick={props.onClick} className={getButtonClasses(props)}>
+    <button
+      type={props.type ?? "button"}
+      onClick={props.onClick}
+      className={getButtonClasses(props)}
+      data-accent={props.accent ? "true" : undefined}
+    >
       {content}
     </button>
   );

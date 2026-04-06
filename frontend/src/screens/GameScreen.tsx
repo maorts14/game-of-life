@@ -169,7 +169,7 @@ export function GameScreen() {
             icon={<ArrowLeft size={18} />}
             mobileLabel="Exit"
             desktopLabel="Save and Exit"
-            className="px-1.5 py-1"
+            className="!min-w-0 !gap-0.5 !px-0.5 !py-1 sm:px-1.5 sm:py-1"
           />
 
           <div className="min-w-0 flex-1 text-center">
