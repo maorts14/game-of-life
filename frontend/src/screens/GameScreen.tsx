@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Gauge,
@@ -16,6 +16,7 @@ import {
 import { Link, Navigate, useParams } from "react-router-dom";
 import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
 import { GameCanvas } from "../components/GameCanvas";
+import type { GameCanvasHandle } from "../components/GameCanvas";
 import { PatternSaveModal } from "../components/PatternSaveModal";
 import { paintCell, useGameStore, usePatterns, usePopulation, useSelectedWorld } from "../store/gameStore";
 
@@ -33,6 +34,7 @@ export function GameScreen() {
   const [pendingPatternSelection, setPendingPatternSelection] = useState<ReturnType<
     typeof createPatternFromSelection
   > | null>(null);
+  const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
   const isRunning = useGameStore((state) => state.isRunning);
   const speed = useGameStore((state) => state.speed);
   const updateGrid = useGameStore((state) => state.updateGrid);
@@ -61,6 +63,40 @@ export function GameScreen() {
   }, [isRunning, speed, stepWorld, worldId]);
 
   useEffect(() => () => setRunning(false), [setRunning]);
+
+  useEffect(() => {
+    if (!activePatternId) {
+      return undefined;
+    }
+
+    function handleDesktopPatternPlacement(event: PointerEvent) {
+      if (event.pointerType === "touch" || event.button !== 0) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (
+        target.closest(
+          "button, a, input, textarea, select, label, [role='button'], [data-skip-pattern-drop='true']",
+        )
+      ) {
+        return;
+      }
+
+      gameCanvasRef.current?.dropPatternAtClientPoint(event.clientX, event.clientY);
+      setActivePatternId(null);
+    }
+
+    document.addEventListener("pointerdown", handleDesktopPatternPlacement);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleDesktopPatternPlacement);
+    };
+  }, [activePatternId]);
 
   if (!worldId || !world) {
     return <Navigate to="/worlds" replace />;
@@ -165,7 +201,7 @@ export function GameScreen() {
             </div>
           </aside>
 
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
+          <div className="relative flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
             <div className="panel ghost-border mb-0.5 grid grid-cols-3 gap-1 rounded-[16px] px-2 py-1.5 xl:mb-2 xl:hidden">
               <div className="px-0.5 py-0.5 text-center">
                 <p className="font-display text-base leading-none text-white">{population}</p>
@@ -184,6 +220,9 @@ export function GameScreen() {
             </div>
             <div className="min-h-0 w-full flex-1">
               <GameCanvas
+                ref={(instance) => {
+                  gameCanvasRef.current = instance;
+                }}
                 grid={world.grid}
                 activePatternId={activePatternId}
                 patterns={customPatterns}
@@ -203,7 +242,7 @@ export function GameScreen() {
                 onSelectionComplete={handleSelectionComplete}
               />
             </div>
-            <div className="flex h-11 items-center justify-center pt-4 sm:pt-6">
+            <div className="flex h-11 items-center justify-center pt-4 sm:pt-6 xl:hidden">
               {activePatternId ? (
                 <button
                   className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3.5 py-1.5 text-[13px] text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white sm:px-4 sm:py-2 sm:text-sm"
@@ -214,6 +253,17 @@ export function GameScreen() {
                 </button>
               ) : null}
             </div>
+            {activePatternId ? (
+              <div className="pointer-events-none absolute bottom-3 left-1/2 hidden -translate-x-1/2 xl:flex">
+                <button
+                  className="pointer-events-auto flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                  onClick={() => setActivePatternId(null)}
+                >
+                  <Trash2 size={16} />
+                  Cancel
+                </button>
+              </div>
+            ) : null}
             <div className="mt-2 xl:hidden">
               {mobileControlPanel ? (
                 <div className="panel ghost-border mb-2 rounded-[16px] px-2 py-2">

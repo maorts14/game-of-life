@@ -1,7 +1,20 @@
-import { PointerEvent, WheelEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  PointerEvent,
+  WheelEvent,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { getPatternById } from "../features/game/presets";
 import type { PatternDefinition, SelectionBounds } from "../features/game/presets";
 import type { Grid } from "../features/game/types";
+
+export interface GameCanvasHandle {
+  dropPatternAtClientPoint: (clientX: number, clientY: number) => void;
+}
 
 interface GameCanvasProps {
   grid: Grid;
@@ -14,7 +27,7 @@ interface GameCanvasProps {
   onSelectionComplete?: (selection: SelectionBounds) => void;
 }
 
-export function GameCanvas({
+export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCanvas({
   grid,
   onToggleCell,
   onPaintCell,
@@ -23,7 +36,7 @@ export function GameCanvas({
   onDropPattern,
   isSelectionMode = false,
   onSelectionComplete,
-}: GameCanvasProps) {
+}, ref) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pointerValueRef = useRef<0 | 1>(1);
@@ -213,18 +226,37 @@ export function GameCanvas({
   const baseOffset = getBaseOffset(scale);
   const transform = `translate(${baseOffset.x + pan.x}px, ${baseOffset.y + pan.y}px) scale(${scale})`;
 
-  function resolveCell(event: PointerEvent<HTMLElement>) {
+  function resolveClientPoint(clientX: number, clientY: number) {
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) {
       return { x: -1, y: -1 };
     }
 
-    const localX = (event.clientX - rect.left - baseOffset.x - pan.x) / scale;
-    const localY = (event.clientY - rect.top - baseOffset.y - pan.y) / scale;
+    const localX = (clientX - rect.left - baseOffset.x - pan.x) / scale;
+    const localY = (clientY - rect.top - baseOffset.y - pan.y) / scale;
     const x = Math.floor(localX / metrics.cellSize);
     const y = Math.floor(localY / metrics.cellSize);
     return { x, y };
   }
+
+  function resolveCell(event: PointerEvent<HTMLElement>) {
+    return resolveClientPoint(event.clientX, event.clientY);
+  }
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      dropPatternAtClientPoint(clientX: number, clientY: number) {
+        if (!activePattern) {
+          return;
+        }
+
+        const { x, y } = resolveClientPoint(clientX, clientY);
+        onDropPattern?.(activePattern.id, x, y);
+      },
+    }),
+    [activePattern, onDropPattern, pan.x, pan.y, scale, metrics.cellSize, baseOffset.x, baseOffset.y],
+  );
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (isSelectionMode) {
@@ -399,4 +431,4 @@ export function GameCanvas({
       />
     </div>
   );
-}
+});
