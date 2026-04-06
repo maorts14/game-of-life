@@ -213,7 +213,7 @@ export function GameCanvas({
   const baseOffset = getBaseOffset(scale);
   const transform = `translate(${baseOffset.x + pan.x}px, ${baseOffset.y + pan.y}px) scale(${scale})`;
 
-  function resolveCell(event: PointerEvent<HTMLCanvasElement>) {
+  function resolveCell(event: PointerEvent<HTMLElement>) {
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) {
       return { x: -1, y: -1 };
@@ -226,7 +226,7 @@ export function GameCanvas({
     return { x, y };
   }
 
-  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (isSelectionMode) {
       const { x, y } = resolveCell(event);
       if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
@@ -241,10 +241,6 @@ export function GameCanvas({
 
     if (activePattern) {
       const { x, y } = resolveCell(event);
-      if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
-        return;
-      }
-
       if (event.pointerType === "touch") {
         isPatternDraggingRef.current = true;
         setHoverCell({ x, y });
@@ -273,9 +269,11 @@ export function GameCanvas({
     onToggleCell(x, y);
   }
 
-  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
     const nextCell = resolveCell(event);
-    if (
+    if (activePattern) {
+      setHoverCell(nextCell);
+    } else if (
       nextCell.x >= 0 &&
       nextCell.y >= 0 &&
       nextCell.x < metrics.width &&
@@ -323,9 +321,10 @@ export function GameCanvas({
     onPaintCell(x, y, pointerValueRef.current);
   }
 
-  function handlePointerUp() {
-    if (activePattern && isPatternDraggingRef.current && hoverCell) {
-      onDropPattern?.(activePattern.id, hoverCell.x, hoverCell.y);
+  function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (activePattern && isPatternDraggingRef.current) {
+      const { x, y } = resolveCell(event);
+      onDropPattern?.(activePattern.id, x, y);
       isPatternDraggingRef.current = false;
       setHoverCell(null);
       return;
@@ -382,15 +381,15 @@ export function GameCanvas({
     <div
       ref={viewportRef}
       onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onContextMenu={(event) => event.preventDefault()}
       className="relative h-full w-full overflow-hidden rounded-[28px] touch-none"
     >
       <canvas
         ref={canvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onContextMenu={(event) => event.preventDefault()}
         style={{
           transform,
           transformOrigin: "top left",
