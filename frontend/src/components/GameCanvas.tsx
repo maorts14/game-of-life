@@ -58,13 +58,17 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
     const width = grid[0]?.length ?? 0;
     const height = grid.length;
     const viewportWidth =
-      typeof window === "undefined"
-        ? 1400
-        : Math.max(320, window.innerWidth - (window.innerWidth >= 1280 ? 560 : 96));
+      viewportSize.width > 0
+        ? viewportSize.width
+        : typeof window === "undefined"
+          ? 1400
+          : Math.max(320, window.innerWidth - (window.innerWidth >= 1280 ? 560 : 96));
     const viewportHeight =
-      typeof window === "undefined"
-        ? 820
-        : Math.max(240, window.innerHeight - (window.innerWidth >= 1280 ? 240 : 220));
+      viewportSize.height > 0
+        ? viewportSize.height
+        : typeof window === "undefined"
+          ? 820
+          : Math.max(240, window.innerHeight - (window.innerWidth >= 1280 ? 240 : 220));
     const cellSize = Math.max(
       4,
       Math.floor(
@@ -78,7 +82,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       canvasWidth: width * cellSize,
       canvasHeight: height * cellSize,
     };
-  }, [grid]);
+  }, [grid, viewportSize.height, viewportSize.width]);
 
   useEffect(() => {
     if (!viewportRef.current) {
