@@ -29,10 +29,14 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <form
         onSubmit={handleSubmit}
         className="panel ghost-border w-full max-w-xl rounded-[28px] px-8 py-8"
+        onClick={(event) => event.stopPropagation()}
       >
         <p className="mb-2 text-xs uppercase tracking-[0.35em] text-cyan-200/70">
           New Simulation

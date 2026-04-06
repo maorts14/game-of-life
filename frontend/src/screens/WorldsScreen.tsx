@@ -71,7 +71,7 @@ export function WorldsScreen() {
           />
         </div>
 
-        <div className="panel ghost-border mt-3 overflow-hidden rounded-[24px] sm:mt-10 sm:rounded-[32px]">
+        <div className="panel ghost-border mt-3 overflow-hidden rounded-[24px] sm:mt-[25px] sm:rounded-[32px]">
           <div className="hidden grid-cols-[2fr_1fr_1fr_auto] gap-4 px-8 py-5 text-xs uppercase tracking-[0.35em] text-slate-500 md:grid">
             <span>World</span>
             <span>Grid Size</span>
