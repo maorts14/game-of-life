@@ -242,17 +242,6 @@ export function GameScreen() {
                 onSelectionComplete={handleSelectionComplete}
               />
             </div>
-            <div className="flex h-11 items-center justify-center pt-4 sm:pt-6 xl:hidden">
-              {activePatternId ? (
-                <button
-                  className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3.5 py-1.5 text-[13px] text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white sm:px-4 sm:py-2 sm:text-sm"
-                  onClick={() => setActivePatternId(null)}
-                >
-                  <Trash2 size={16} />
-                  Cancel
-                </button>
-              ) : null}
-            </div>
             {activePatternId ? (
               <div className="pointer-events-none absolute bottom-3 left-1/2 hidden -translate-x-1/2 xl:flex">
                 <button
@@ -264,143 +253,160 @@ export function GameScreen() {
                 </button>
               </div>
             ) : null}
-            <div className="mt-2 xl:hidden">
-              {mobileControlPanel ? (
-                <div className="panel ghost-border mb-2 rounded-[16px] px-2 py-2">
-                  {mobileControlPanel === "speed" ? (
-                    <div className="min-w-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">Speed</span>
-                        <span className="font-display text-base text-white">{speed}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={1}
-                        max={20}
-                        value={speed}
-                        onChange={(event) => setSpeed(Number(event.target.value))}
-                        className="mt-2 h-1 w-full accent-cyan-300"
-                      />
-                    </div>
-                  ) : null}
-
-                  {mobileControlPanel === "actions" ? (
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      <button
-                        className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
-                        onClick={() => randomizeWorld(worldId)}
-                      >
-                        <Shuffle size={14} />
-                        Randomize
-                      </button>
-                      <button
-                        className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
-                        onClick={() => clearWorld(worldId)}
-                      >
-                        <Trash2 size={14} />
-                        Clear
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {mobileControlPanel === "patterns" ? (
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      <button
-                        className="shrink-0 rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-2.5 py-1 text-left text-[12px] text-white transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
-                        onClick={() => {
-                          setActivePatternId(null);
-                          setIsPatternCaptureMode(true);
-                        }}
-                      >
-                        New Pattern
-                      </button>
-                      {patterns.map((pattern) => (
-                        <button
-                          key={`mobile-${pattern.id}`}
-                          className={`shrink-0 rounded-[14px] px-3 py-1 text-left transition ${
-                            activePatternId === pattern.id
-                              ? "bg-cyan-300/18 text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
-                              : "bg-white/[0.03] text-white hover:bg-white/[0.08]"
-                          }`}
-                          onClick={() => setActivePatternId(pattern.id)}
-                        >
-                          <span className="block truncate text-[12px]">{pattern.name}</span>
-                          <span className="mt-0.5 block text-[10px] text-slate-400">
-                            {pattern.width}x{pattern.height}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
+            <div className="relative mt-2 xl:hidden">
+              {activePatternId ? (
+                <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2">
+                  <button
+                    className="pointer-events-auto flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3.5 py-1.5 text-[13px] text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                    onClick={() => setActivePatternId(null)}
+                  >
+                    <Trash2 size={16} />
+                    Cancel
+                  </button>
                 </div>
               ) : null}
 
-              <div className="panel ghost-border rounded-[18px] px-2 py-1.5">
-                <div className="mb-1.5 flex items-center justify-center gap-2">
-                  <button
-                    className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
-                    onClick={() => stepWorld(worldId)}
-                  >
-                    <StepForward size={16} />
-                    <span className="text-[9px] uppercase tracking-[0.14em]">Step</span>
-                  </button>
+              <div
+                className={`transition-transform duration-200 ease-out ${
+                  activePatternId ? "translate-y-11" : "translate-y-0"
+                }`}
+              >
+                {mobileControlPanel ? (
+                  <div className="panel ghost-border mb-2 rounded-[16px] px-2 py-2">
+                    {mobileControlPanel === "speed" ? (
+                      <div className="min-w-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">Speed</span>
+                          <span className="font-display text-base text-white">{speed}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={1}
+                          max={20}
+                          value={speed}
+                          onChange={(event) => setSpeed(Number(event.target.value))}
+                          className="mt-2 h-1 w-full accent-cyan-300"
+                        />
+                      </div>
+                    ) : null}
 
-                  {isRunning ? (
+                    {mobileControlPanel === "actions" ? (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        <button
+                          className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
+                          onClick={() => randomizeWorld(worldId)}
+                        >
+                          <Shuffle size={14} />
+                          Randomize
+                        </button>
+                        <button
+                          className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
+                          onClick={() => clearWorld(worldId)}
+                        >
+                          <Trash2 size={14} />
+                          Clear
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {mobileControlPanel === "patterns" ? (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        <button
+                          className="shrink-0 rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-2.5 py-1 text-left text-[12px] text-white transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                          onClick={() => {
+                            setActivePatternId(null);
+                            setIsPatternCaptureMode(true);
+                          }}
+                        >
+                          New Pattern
+                        </button>
+                        {patterns.map((pattern) => (
+                          <button
+                            key={`mobile-${pattern.id}`}
+                            className={`shrink-0 rounded-[14px] px-3 py-1 text-left transition ${
+                              activePatternId === pattern.id
+                                ? "bg-cyan-300/18 text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
+                                : "bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                            }`}
+                            onClick={() => setActivePatternId(pattern.id)}
+                          >
+                            <span className="block truncate text-[12px]">{pattern.name}</span>
+                            <span className="mt-0.5 block text-[10px] text-slate-400">
+                              {pattern.width}x{pattern.height}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="panel ghost-border rounded-[18px] px-2 py-1.5">
+                  <div className="mb-1.5 flex items-center justify-center gap-2">
                     <button
                       className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
-                      onClick={() => setRunning(false)}
+                      onClick={() => stepWorld(worldId)}
                     >
-                      <Pause size={16} />
-                      <span className="text-[9px] uppercase tracking-[0.14em]">Pause</span>
+                      <StepForward size={16} />
+                      <span className="text-[9px] uppercase tracking-[0.14em]">Step</span>
                     </button>
-                  ) : (
+
+                    {isRunning ? (
+                      <button
+                        className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 text-slate-300 transition hover:bg-white/[0.04]"
+                        onClick={() => setRunning(false)}
+                      >
+                        <Pause size={16} />
+                        <span className="text-[9px] uppercase tracking-[0.14em]">Pause</span>
+                      </button>
+                    ) : (
+                      <button
+                        className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-cyan-400/16 px-2 py-1.5 text-cyan-100 transition hover:bg-cyan-400/22"
+                        onClick={() => setRunning(true)}
+                      >
+                        <Play size={16} />
+                        <span className="text-[9px] uppercase tracking-[0.14em]">Play</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex justify-center gap-1.5 overflow-x-auto pb-0.5">
                     <button
-                      className="flex min-w-[60px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-cyan-400/16 px-2 py-1.5 text-cyan-100 transition hover:bg-cyan-400/22"
-                      onClick={() => setRunning(true)}
+                      className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
+                        mobileControlPanel === "speed" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
+                      }`}
+                      onClick={() =>
+                        setMobileControlPanel((value) => (value === "speed" ? null : "speed"))
+                      }
                     >
-                      <Play size={16} />
-                      <span className="text-[9px] uppercase tracking-[0.14em]">Play</span>
+                      <Gauge size={16} />
+                      <span className="text-[9px] uppercase tracking-[0.14em]">Speed</span>
                     </button>
-                  )}
-                </div>
 
-                <div className="flex justify-center gap-1.5 overflow-x-auto pb-0.5">
-                  <button
-                    className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
-                      mobileControlPanel === "speed" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
-                    }`}
-                    onClick={() =>
-                      setMobileControlPanel((value) => (value === "speed" ? null : "speed"))
-                    }
-                  >
-                    <Gauge size={16} />
-                    <span className="text-[9px] uppercase tracking-[0.14em]">Speed</span>
-                  </button>
+                    <button
+                      className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
+                        mobileControlPanel === "actions" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
+                      }`}
+                      onClick={() =>
+                        setMobileControlPanel((value) => (value === "actions" ? null : "actions"))
+                      }
+                    >
+                      <Wrench size={16} />
+                      <span className="text-[9px] uppercase tracking-[0.14em]">Actions</span>
+                    </button>
 
-                  <button
-                    className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
-                      mobileControlPanel === "actions" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
-                    }`}
-                    onClick={() =>
-                      setMobileControlPanel((value) => (value === "actions" ? null : "actions"))
-                    }
-                  >
-                    <Wrench size={16} />
-                    <span className="text-[9px] uppercase tracking-[0.14em]">Actions</span>
-                  </button>
-
-                  <button
-                    className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
-                      mobileControlPanel === "patterns" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
-                    }`}
-                    onClick={() =>
-                      setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))
-                    }
-                  >
-                    <Shapes size={16} />
-                    <span className="text-[9px] uppercase tracking-[0.14em]">Patterns</span>
-                  </button>
-
+                    <button
+                      className={`flex min-w-[56px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-1.5 transition ${
+                        mobileControlPanel === "patterns" ? "bg-white/[0.08] text-cyan-200" : "text-slate-300"
+                      }`}
+                      onClick={() =>
+                        setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))
+                      }
+                    >
+                      <Shapes size={16} />
+                      <span className="text-[9px] uppercase tracking-[0.14em]">Patterns</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
