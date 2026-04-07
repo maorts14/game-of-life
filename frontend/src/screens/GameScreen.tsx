@@ -204,7 +204,7 @@ export function GameScreen() {
             </div>
           </aside>
 
-          <div className="relative flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
+          <div className="relative flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:overflow-visible xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
             <div className="panel ghost-border mb-0.5 grid grid-cols-3 gap-1 rounded-[16px] px-2 py-1.5 xl:mb-2 xl:hidden">
               <div className="px-0.5 py-0.5 text-center">
                 <p className="font-display text-base leading-none text-white">{population}</p>
@@ -221,7 +221,11 @@ export function GameScreen() {
                 <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Grid</p>
               </div>
             </div>
-            <div className="min-h-0 w-full flex-1">
+            <div
+              className={`min-h-0 w-full flex-1 transition-[margin] duration-200 ${
+                activePatternId ? "xl:mb-[25px]" : ""
+              }`}
+            >
               <GameCanvas
                 ref={(instance) => {
                   gameCanvasRef.current = instance;
@@ -246,9 +250,9 @@ export function GameScreen() {
               />
             </div>
             {activePatternId ? (
-              <div className="pointer-events-none absolute bottom-3 left-1/2 hidden -translate-x-1/2 xl:flex">
+              <div className="pointer-events-none absolute bottom-0 left-1/2 z-10 hidden -translate-x-1/2 translate-y-1/2 xl:flex">
                 <button
-                  className="pointer-events-auto flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                  className="pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
                   onClick={() => setActivePatternId(null)}
                 >
                   <Trash2 size={16} />
