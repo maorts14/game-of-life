@@ -1,17 +1,21 @@
-import { useState } from "react";
-import { Plus, ArrowRight, ArrowLeft, Layers3, Grid2x2, History } from "lucide-react";
+import { useState, type KeyboardEvent } from "react";
+import { Plus, ArrowLeft, Layers3, Grid2x2, History, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
+import { DeleteWorldModal } from "../components/DeleteWorldModal";
 import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
 import { WorldModal } from "../components/WorldModal";
 import { useGameStore, useWorldSummaries } from "../store/gameStore";
+import type { WorldSummary } from "../features/game/types";
 import { formatCompactDate, formatDate } from "../utils/formatters";
 
 export function WorldsScreen() {
   const worlds = useWorldSummaries();
   const createWorld = useGameStore((state) => state.createWorld);
+  const deleteWorld = useGameStore((state) => state.deleteWorld);
   const selectWorld = useGameStore((state) => state.selectWorld);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [worldPendingDelete, setWorldPendingDelete] = useState<WorldSummary | null>(null);
   const navigate = useNavigate();
 
   function handleCreateWorld(params: { name: string; width: number; height: number }) {
@@ -23,6 +27,26 @@ export function WorldsScreen() {
   function handleOpenWorld(worldId: string) {
     selectWorld(worldId);
     navigate(`/game/${worldId}`);
+  }
+
+  function handleDeleteRequest(world: WorldSummary) {
+    setWorldPendingDelete(world);
+  }
+
+  function handleConfirmDeleteWorld() {
+    if (!worldPendingDelete) {
+      return;
+    }
+
+    deleteWorld(worldPendingDelete.id);
+    setWorldPendingDelete(null);
+  }
+
+  function handleWorldRowKeyDown(event: KeyboardEvent<HTMLDivElement>, worldId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleOpenWorld(worldId);
+    }
   }
 
   return (
@@ -38,6 +62,12 @@ export function WorldsScreen() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateWorld}
+      />
+      <DeleteWorldModal
+        isOpen={worldPendingDelete !== null}
+        worldName={worldPendingDelete?.name ?? ""}
+        onClose={() => setWorldPendingDelete(null)}
+        onConfirm={handleConfirmDeleteWorld}
       />
 
       <div className="absolute left-4 top-4 z-20 sm:left-6 sm:top-6 xl:left-16 xl:top-8">
@@ -85,9 +115,12 @@ export function WorldsScreen() {
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 md:hidden">
               <div className="space-y-3 pb-1">
                 {worlds.map((world) => (
-                  <button
+                  <div
                     key={world.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleOpenWorld(world.id)}
+                    onKeyDown={(event) => handleWorldRowKeyDown(event, world.id)}
                     className="group relative w-full overflow-hidden rounded-[20px] bg-[linear-gradient(180deg,rgba(28,27,27,0.78),rgba(18,18,18,0.68))] px-4 py-4 text-left backdrop-blur-xl transition duration-200 active:scale-[0.985]"
                   >
                     <span className="absolute bottom-4 left-0 top-4 w-[2px] rounded-full bg-cyan-300/0 transition duration-200 group-hover:bg-cyan-300/70 group-active:bg-cyan-300/70" />
@@ -110,15 +143,23 @@ export function WorldsScreen() {
                       </div>
 
                       <div className="mt-0.5 flex shrink-0 flex-col items-end gap-2">
-                        <span className="text-cyan-200 transition duration-200 group-hover:translate-x-0.5 group-active:translate-x-0.5">
-                          <ArrowRight size={18} />
-                        </span>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-400/12 bg-red-500/8 text-red-100 transition hover:border-red-400/22 hover:bg-red-500/14 hover:text-white"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteRequest(world);
+                          }}
+                          aria-label={`Delete ${world.name}`}
+                        >
+                          <Trash2 size={15} />
+                        </button>
                         <span className="text-[11px] text-slate-400">
                           {formatCompactDate(world.updatedAt)}
                         </span>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -128,15 +169,18 @@ export function WorldsScreen() {
                 <span>World</span>
                 <span>Grid Size</span>
                 <span>Last Modified</span>
-                <span className="text-right">Launch</span>
+                <span className="text-right">Delete</span>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="divide-y divide-white/4">
                 {worlds.map((world) => (
-                  <button
+                  <div
                     key={world.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleOpenWorld(world.id)}
+                    onKeyDown={(event) => handleWorldRowKeyDown(event, world.id)}
                     className="group grid w-full grid-cols-[2fr_1fr_1fr_auto] items-center gap-4 px-8 py-7 text-left transition hover:bg-white/3"
                   >
                     <div>
@@ -149,10 +193,20 @@ export function WorldsScreen() {
                       {world.width} x {world.height}
                     </p>
                     <p className="text-sm text-slate-400">{formatDate(world.updatedAt)}</p>
-                    <span className="inline-flex justify-end text-cyan-200 transition duration-200 group-hover:translate-x-0.5">
-                      <ArrowRight size={20} />
-                    </span>
-                  </button>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-400/12 bg-red-500/8 text-red-100 transition hover:border-red-400/22 hover:bg-red-500/14 hover:text-white"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDeleteRequest(world);
+                        }}
+                        aria-label={`Delete ${world.name}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
                 ))}
                 </div>
               </div>
