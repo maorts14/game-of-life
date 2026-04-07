@@ -350,6 +350,9 @@ export function GameScreen() {
                             <span className="mt-1 block w-full truncate px-1 text-[13px] leading-3">
                               {pattern.name}
                             </span>
+                            <span className="mt-0.5 block w-full truncate px-1 text-[12px] leading-3 text-slate-500">
+                              {pattern.width}x{pattern.height}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -456,8 +459,13 @@ export function GameScreen() {
                               setActivePatternId(pattern.id);
                             }}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="font-display text-base text-white">{pattern.name}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-display text-base text-white">{pattern.name}</span>
+                              </div>
+                              <span className="mt-0.5 block text-[11px] text-slate-500">
+                                {pattern.width}x{pattern.height}
+                              </span>
                             </div>
                           </button>
                           <div className="flex items-center gap-1">
@@ -490,7 +498,7 @@ export function GameScreen() {
                           </div>
                         </div>
                         <button
-                          className="mt-3 block w-full overflow-hidden rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
+                          className="mt-1.5 block w-full overflow-hidden rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
                           onClick={() => setActivePatternId(pattern.id)}
                         >
                           <PatternPreview pattern={pattern} />
