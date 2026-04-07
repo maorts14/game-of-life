@@ -317,30 +317,38 @@ export function GameScreen() {
                     ) : null}
 
                     {mobileControlPanel === "patterns" ? (
-                      <div className="flex gap-2 overflow-x-auto pb-1">
+                      <div className="flex items-start gap-2.5 overflow-x-auto pb-0.5">
                         <button
-                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
+                          className="mt-[2.5px] inline-flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-[16px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
                           onClick={() => {
                             setActivePatternId(null);
                             setIsPatternCaptureMode(true);
                           }}
                           aria-label="Create pattern"
                         >
-                          <Plus size={16} />
+                          <Plus size={20} />
                         </button>
-                        {patterns.map((pattern) => (
-                          <button
-                            key={`mobile-${pattern.id}`}
-                            className={`shrink-0 rounded-[14px] px-3 py-1 text-left transition ${
-                              activePatternId === pattern.id
-                                ? "bg-cyan-300/18 text-cyan-100 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
-                                : "bg-white/[0.03] text-white hover:bg-white/[0.08]"
-                            }`}
-                            onClick={() => setActivePatternId(pattern.id)}
-                          >
-                            <span className="block truncate text-[12px]">{pattern.name}</span>
-                            <span className="mt-0.5 block text-[10px] text-slate-400">
-                              {pattern.width}x{pattern.height}
+                          {patterns.map((pattern) => (
+                            <button
+                              key={`mobile-${pattern.id}`}
+                              className={`flex w-[84px] shrink-0 flex-col items-center justify-start text-center transition ${
+                                activePatternId === pattern.id
+                                  ? "text-cyan-100"
+                                  : "text-white"
+                              }`}
+                              onClick={() => setActivePatternId(pattern.id)}
+                            >
+                              <span
+                              className={`flex h-[50px] w-[84px] items-center justify-center overflow-hidden rounded-[15px] transition ${
+                                activePatternId === pattern.id
+                                  ? "bg-cyan-300/18 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
+                                  : "bg-white/[0.03] hover:bg-white/[0.08]"
+                              }`}
+                            >
+                              <PatternPreview pattern={pattern} size="compact" />
+                            </span>
+                            <span className="mt-1 block w-full truncate px-1 text-[13px] leading-3">
+                              {pattern.name}
                             </span>
                           </button>
                         ))}
@@ -559,20 +567,22 @@ export function GameScreen() {
 
 function PatternPreview({
   pattern,
+  size = "default",
 }: {
   pattern: { id: string; width: number; height: number; cells: Array<[number, number]> };
+  size?: "default" | "compact";
 }) {
-  const maxPreviewWidth = 124;
-  const maxPreviewHeight = 72;
-  const previewOptions = [1, 0]
+  const maxPreviewWidth = size === "compact" ? 56 : 124;
+  const maxPreviewHeight = size === "compact" ? 26 : 72;
+  const previewOptions = (size === "compact" ? [1] : [1, 0])
     .flatMap((padding) =>
-      [2, 1, 0.5, 0].map((cellGap) => {
+      (size === "compact" ? [1, 0.5, 0] : [2, 1, 0.5, 0]).map((cellGap) => {
         const columns = Math.max(pattern.width + padding * 2, 1);
         const rows = Math.max(pattern.height + padding * 2, 1);
         const cellSize = Math.max(
-          0.5,
+          size === "compact" ? 0.75 : 0.5,
           Math.min(
-            8,
+            size === "compact" ? 5 : 8,
             Math.min(
               (maxPreviewWidth - (columns - 1) * cellGap) / columns,
               (maxPreviewHeight - (rows - 1) * cellGap) / rows,
@@ -599,7 +609,7 @@ function PatternPreview({
 
   return (
     <div
-      className="mx-auto grid justify-center gap-[2px]"
+      className="mx-auto grid justify-center"
       style={{
         gap: `${cellGap}px`,
         gridTemplateColumns: `repeat(${columns}, ${cellSize}px)`,
