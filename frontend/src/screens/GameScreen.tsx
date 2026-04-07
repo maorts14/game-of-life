@@ -315,13 +315,14 @@ export function GameScreen() {
                     {mobileControlPanel === "patterns" ? (
                       <div className="flex gap-2 overflow-x-auto pb-1">
                         <button
-                          className="shrink-0 rounded-[14px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-2.5 py-1 text-left text-[12px] text-white transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
                           onClick={() => {
                             setActivePatternId(null);
                             setIsPatternCaptureMode(true);
                           }}
+                          aria-label="Create pattern"
                         >
-                          New Pattern
+                          <Plus size={16} />
                         </button>
                         {patterns.map((pattern) => (
                           <button
@@ -418,16 +419,14 @@ export function GameScreen() {
             <div className="mt-3 flex flex-col gap-3">
               {isPatternPickerOpen ? (
                 <button
-                  className="rounded-[18px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-4 py-4 text-left transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] px-4 py-3 text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
                   onClick={() => {
                     setActivePatternId(null);
                     setIsPatternCaptureMode(true);
                   }}
                 >
-                  <span className="font-display text-base text-white">New Pattern</span>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Select a range on the board.
-                  </p>
+                  <Plus size={16} />
+                  <span className="font-display text-base">Create</span>
                 </button>
               ) : null}
               {isPatternPickerOpen
