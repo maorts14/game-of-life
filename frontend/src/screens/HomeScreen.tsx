@@ -22,9 +22,14 @@ export function HomeScreen() {
           </p>
 
           <div className="mt-12 flex flex-wrap gap-4">
-            <Link to="/worlds" className="control-button" data-accent="true">
+            <Link
+              to="/worlds"
+              className="control-button [background:radial-gradient(circle_at_top,rgba(125,244,255,0.6),rgba(0,240,255,0.95))]"
+              data-accent="true"
+              style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
+            >
               <ArrowRight size={18} />
-              Start a Game
+              Play
             </Link>
             <Link to="/about" className="control-button">
               <Info size={18} />
