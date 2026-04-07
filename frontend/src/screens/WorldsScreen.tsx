@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Plus, ArrowRight, ArrowLeft, Layers3 } from "lucide-react";
+import { Plus, ArrowRight, ArrowLeft, Layers3, Grid2x2, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
 import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
 import { WorldModal } from "../components/WorldModal";
 import { useGameStore, useWorldSummaries } from "../store/gameStore";
-import { formatDate } from "../utils/formatters";
+import { formatCompactDate, formatDate } from "../utils/formatters";
 
 export function WorldsScreen() {
   const worlds = useWorldSummaries();
@@ -26,7 +26,7 @@ export function WorldsScreen() {
   }
 
   return (
-    <main className="page-fade relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
+    <main className="page-fade relative h-[100dvh] overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
       <BackgroundLifeCanvas
         className="absolute inset-0 h-full w-full opacity-55"
         cellSize={20}
@@ -50,7 +50,7 @@ export function WorldsScreen() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl">
+      <div className="relative z-10 mx-auto flex h-full min-h-0 max-w-7xl flex-col">
         <div className="mt-14 flex flex-col gap-3 sm:mt-20 sm:gap-6 xl:mt-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">World Registry</p>
@@ -67,63 +67,108 @@ export function WorldsScreen() {
             desktopLabel="Create New World"
             onClick={() => setIsModalOpen(true)}
             accent
-            className="mx-auto w-3/5 min-w-[160px] px-3 py-1 sm:mx-0 sm:w-fit sm:shrink-0"
+            className="hidden min-w-[160px] px-3 py-1 md:flex md:w-fit md:shrink-0"
           />
         </div>
 
-        <div className="panel ghost-border mt-3 overflow-hidden rounded-[24px] sm:mt-[25px] sm:rounded-[32px]">
-          <div className="hidden grid-cols-[2fr_1fr_1fr_auto] gap-4 px-8 py-5 text-xs uppercase tracking-[0.35em] text-slate-500 md:grid">
-            <span>World</span>
-            <span>Grid Size</span>
-            <span>Last Modified</span>
-            <span className="text-right">Launch</span>
+        {worlds.length === 0 ? (
+          <div className="panel ghost-border mt-3 flex min-h-80 flex-1 flex-col items-center justify-center rounded-[24px] px-8 text-center sm:mt-[25px] sm:rounded-[32px]">
+            <Layers3 size={40} className="text-cyan-200/70" />
+            <h2 className="font-display mt-6 text-3xl text-white">No worlds online yet</h2>
+            <p className="mt-3 max-w-lg text-sm leading-7 text-slate-400">
+              Create your first simulation space to begin editing cells, running generations, and
+              preserving patterns locally.
+            </p>
           </div>
+        ) : (
+          <>
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 md:hidden">
+              <div className="space-y-3 pb-1">
+                {worlds.map((world) => (
+                  <button
+                    key={world.id}
+                    onClick={() => handleOpenWorld(world.id)}
+                    className="group relative w-full overflow-hidden rounded-[20px] bg-[linear-gradient(180deg,rgba(28,27,27,0.78),rgba(18,18,18,0.68))] px-4 py-4 text-left backdrop-blur-xl transition duration-200 active:scale-[0.985]"
+                  >
+                    <span className="absolute bottom-4 left-0 top-4 w-[2px] rounded-full bg-cyan-300/0 transition duration-200 group-hover:bg-cyan-300/70 group-active:bg-cyan-300/70" />
 
-          {worlds.length === 0 ? (
-            <div className="flex min-h-80 flex-col items-center justify-center px-8 text-center">
-              <Layers3 size={40} className="text-cyan-200/70" />
-              <h2 className="font-display mt-6 text-3xl text-white">No worlds online yet</h2>
-              <p className="mt-3 max-w-lg text-sm leading-7 text-slate-400">
-                Create your first simulation space to begin editing cells, running generations, and
-                preserving patterns locally.
-              </p>
+                    <div className="relative flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-display truncate text-[1.2rem] font-semibold tracking-[0.01em] text-white">
+                          {world.name}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-slate-400">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Grid2x2 size={12} className="text-slate-500" />
+                            {world.width} x {world.height}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <History size={12} className="text-slate-500" />
+                            Gen {world.generation}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-0.5 flex shrink-0 flex-col items-end gap-2">
+                        <span className="text-cyan-200 transition duration-200 group-hover:translate-x-0.5 group-active:translate-x-0.5">
+                          <ArrowRight size={18} />
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {formatCompactDate(world.updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="divide-y divide-white/4">
-              {worlds.map((world) => (
-                <button
-                  key={world.id}
-                  onClick={() => handleOpenWorld(world.id)}
-                  className="grid w-full grid-cols-1 gap-4 px-5 py-6 text-left transition hover:bg-white/3 sm:px-6 md:grid-cols-[2fr_1fr_1fr_auto] md:items-center md:px-8 md:py-7"
-                >
-                  <div>
-                    <p className="font-display text-2xl text-white sm:text-3xl md:text-2xl">{world.name}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-500">
-                      Gen {world.generation}
+
+            <div className="panel ghost-border mt-3 hidden min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] sm:mt-[25px] sm:rounded-[32px] md:flex">
+              <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-8 py-5 text-xs uppercase tracking-[0.35em] text-slate-500">
+                <span>World</span>
+                <span>Grid Size</span>
+                <span>Last Modified</span>
+                <span className="text-right">Launch</span>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="divide-y divide-white/4">
+                {worlds.map((world) => (
+                  <button
+                    key={world.id}
+                    onClick={() => handleOpenWorld(world.id)}
+                    className="group grid w-full grid-cols-[2fr_1fr_1fr_auto] items-center gap-4 px-8 py-7 text-left transition hover:bg-white/3"
+                  >
+                    <div>
+                      <p className="font-display text-2xl text-white">{world.name}</p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-500">
+                        Gen {world.generation}
+                      </p>
+                    </div>
+                    <p className="text-sm text-slate-300">
+                      {world.width} x {world.height}
                     </p>
-                  </div>
-                  <p className="text-sm text-slate-300 md:text-sm">
-                    <span className="mr-2 text-[10px] uppercase tracking-[0.24em] text-slate-500 md:hidden">
-                      Grid
+                    <p className="text-sm text-slate-400">{formatDate(world.updatedAt)}</p>
+                    <span className="inline-flex justify-end text-cyan-200 transition duration-200 group-hover:translate-x-0.5">
+                      <ArrowRight size={20} />
                     </span>
-                    {world.width} x {world.height}
-                  </p>
-                  <p className="text-sm text-slate-400">
-                    <span className="mr-2 text-[10px] uppercase tracking-[0.24em] text-slate-500 md:hidden">
-                      Updated
-                    </span>
-                    {formatDate(world.updatedAt)}
-                  </p>
-                  <span className="inline-flex justify-start text-cyan-200 md:justify-end">
-                    <span className="mr-2 text-[10px] uppercase tracking-[0.24em] text-slate-500 md:hidden">
-                      Open
-                    </span>
-                    <ArrowRight size={20} />
-                  </span>
-                </button>
-              ))}
+                  </button>
+                ))}
+                </div>
+              </div>
             </div>
-          )}
+          </>
+        )}
+
+        <div className="mt-4 flex justify-center md:hidden">
+          <ResponsiveIconButton
+            icon={<Plus size={18} />}
+            mobileLabel="Create"
+            desktopLabel="Create New World"
+            onClick={() => setIsModalOpen(true)}
+            accent
+            className="w-full max-w-[280px] px-3 py-1"
+          />
         </div>
       </div>
     </main>
