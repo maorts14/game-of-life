@@ -40,7 +40,7 @@ export function WorldsScreen() {
         onCreate={handleCreateWorld}
       />
 
-      <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-6 xl:left-16 xl:top-8">
+      <div className="absolute left-4 top-4 z-20 sm:left-6 sm:top-6 xl:left-16 xl:top-8">
         <ResponsiveIconButton
           to="/"
           icon={<ArrowLeft size={16} />}
