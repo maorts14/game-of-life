@@ -163,7 +163,32 @@ export function GameScreen() {
         }}
       />
       <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(100vh-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
-        <header className="panel ghost-border flex items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
+        <header className="panel ghost-border grid grid-cols-[46px_minmax(0,1fr)] items-stretch gap-2.5 rounded-[20px] px-3 py-2 sm:hidden">
+          <ResponsiveIconButton
+            to="/"
+            icon={<ArrowLeft size={18} />}
+            mobileLabel="Exit"
+            desktopLabel="Save and Exit"
+            className="!min-w-0 !self-stretch !justify-center !gap-0.5 !rounded-[12px] !px-0.5 !py-0.5"
+          />
+
+          <div className="flex min-w-0 flex-col justify-center gap-1 px-0.5">
+            <h1 className="font-display truncate text-[1.18rem] leading-none text-white">
+              {world.name}
+            </h1>
+
+            <div className="flex items-end gap-2">
+              <p className="truncate text-[0.85rem] leading-none uppercase tracking-[0.3em] text-slate-500">
+                Generation
+              </p>
+              <p className="font-display text-[1.05rem] leading-none text-white">
+                {world.generation}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <header className="panel ghost-border hidden items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:flex sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
           <ResponsiveIconButton
             to="/"
             icon={<ArrowLeft size={18} />}
@@ -205,7 +230,7 @@ export function GameScreen() {
           </aside>
 
           <div className="relative flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:overflow-visible xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
-            <div className="panel ghost-border mb-0.5 grid grid-cols-3 gap-1 rounded-[16px] px-2 py-1.5 xl:mb-2 xl:hidden">
+            <div className="panel ghost-border mb-2.5 grid grid-cols-3 gap-1 rounded-[16px] px-2 py-1.5 xl:mb-2 xl:hidden">
               <div className="px-0.5 py-0.5 text-center">
                 <p className="font-display text-base leading-none text-white">{population}</p>
                 <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Population</p>
@@ -260,7 +285,7 @@ export function GameScreen() {
                 </button>
               </div>
             ) : null}
-            <div className="relative mt-2 xl:hidden">
+            <div className="relative mt-2.5 xl:hidden">
               {activePatternId ? (
                 <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2">
                   <button
