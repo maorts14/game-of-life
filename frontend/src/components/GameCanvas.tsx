@@ -14,6 +14,7 @@ import type { Grid } from "../features/game/types";
 
 export interface GameCanvasHandle {
   dropPatternAtClientPoint: (clientX: number, clientY: number) => void;
+  centerBoard: () => void;
 }
 
 interface GameCanvasProps {
@@ -37,6 +38,8 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
   isSelectionMode = false,
   onSelectionComplete,
 }, ref) {
+  const MIN_SCALE = 0.3;
+  const MAX_SCALE = 7;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pointerValueRef = useRef<0 | 1>(1);
@@ -53,6 +56,12 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const maxScale =
+    (viewportSize.width > 0
+      ? viewportSize.width < 640
+      : typeof window !== "undefined" && window.innerWidth < 640)
+      ? MAX_SCALE * 2
+      : MAX_SCALE;
 
   const metrics = useMemo(() => {
     const width = grid[0]?.length ?? 0;
@@ -223,16 +232,30 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
   function clampPan(nextScale: number, nextPan: { x: number; y: number }) {
     const scaledWidth = metrics.canvasWidth * nextScale;
     const scaledHeight = metrics.canvasHeight * nextScale;
+    const baseOffset = getBaseOffset(nextScale);
+    const halfViewportWidth = viewportSize.width / 2;
+    const halfViewportHeight = viewportSize.height / 2;
 
     return {
-      x:
-        scaledWidth <= viewportSize.width
-          ? 0
-          : Math.min(0, Math.max(viewportSize.width - scaledWidth, nextPan.x)),
-      y:
-        scaledHeight <= viewportSize.height
-          ? 0
-          : Math.min(0, Math.max(viewportSize.height - scaledHeight, nextPan.y)),
+      x: Math.min(
+        halfViewportWidth - baseOffset.x,
+        Math.max(halfViewportWidth - baseOffset.x - scaledWidth, nextPan.x),
+      ),
+      y: Math.min(
+        halfViewportHeight - baseOffset.y,
+        Math.max(halfViewportHeight - baseOffset.y - scaledHeight, nextPan.y),
+      ),
+    };
+  }
+
+  function getCenteredPan(nextScale: number) {
+    const scaledWidth = metrics.canvasWidth * nextScale;
+    const scaledHeight = metrics.canvasHeight * nextScale;
+    const nextBaseOffset = getBaseOffset(nextScale);
+
+    return {
+      x: (viewportSize.width - scaledWidth) / 2 - nextBaseOffset.x,
+      y: (viewportSize.height - scaledHeight) / 2 - nextBaseOffset.y,
     };
   }
 
@@ -267,8 +290,11 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
         const { x, y } = resolveClientPoint(clientX, clientY);
         onDropPattern?.(activePattern.id, x, y);
       },
+      centerBoard() {
+        setPan(clampPan(scale, getCenteredPan(scale)));
+      },
     }),
-    [activePattern, onDropPattern, pan.x, pan.y, scale, metrics.cellSize, baseOffset.x, baseOffset.y],
+    [activePattern, onDropPattern, scale, metrics.canvasHeight, metrics.canvasWidth, viewportSize.height, viewportSize.width],
   );
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -438,7 +464,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
     }
 
     const zoomFactor = event.deltaY < 0 ? 1.12 : 0.9;
-    const nextScale = Math.min(4, Math.max(0.5, scale * zoomFactor));
+    const nextScale = Math.min(maxScale, Math.max(MIN_SCALE, scale * zoomFactor));
 
     if (nextScale === scale) {
       return;
@@ -469,7 +495,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onContextMenu={(event) => event.preventDefault()}
-      className="relative h-full w-full overflow-hidden rounded-[28px] touch-none"
+      className="relative h-full w-full overflow-hidden rounded-[4px] sm:rounded-[6px] touch-none"
     >
       <canvas
         ref={canvasRef}
@@ -478,7 +504,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
           transformOrigin: "top left",
           touchAction: "none",
         }}
-        className="glow-pulse absolute left-0 top-0 rounded-[28px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
+        className="glow-pulse absolute left-0 top-0 rounded-[4px] sm:rounded-[6px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
       />
     </div>
   );

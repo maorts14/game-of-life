@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Gauge,
   Info,
+  LocateFixed,
   Minus,
   Pause,
   Play,
@@ -330,6 +331,12 @@ export function GameScreen() {
                       <div className="overflow-x-auto px-1 pt-1 pb-1">
                         <div className="flex min-w-max justify-center gap-2">
                           <ResponsiveIconButton
+                            icon={<LocateFixed size={16} />}
+                            mobileLabel="Center"
+                            onClick={() => gameCanvasRef.current?.centerBoard()}
+                            className="!min-w-[72px] !px-2 !py-1.5"
+                          />
+                          <ResponsiveIconButton
                             icon={<Shuffle size={16} />}
                             mobileLabel="Randomize"
                             onClick={() => randomizeWorld(worldId)}
@@ -542,6 +549,13 @@ export function GameScreen() {
               <button className="control-button justify-center py-3" onClick={() => randomizeWorld(worldId)}>
                 <Shuffle size={18} />
                 Randomize
+              </button>
+              <button
+                className="control-button justify-center py-3"
+                onClick={() => gameCanvasRef.current?.centerBoard()}
+              >
+                <LocateFixed size={18} />
+                Center
               </button>
               <button className="control-button justify-center py-3" onClick={() => clearWorld(worldId)}>
                 <Trash2 size={18} />
