@@ -279,7 +279,11 @@ export function GameScreen() {
                 }`}
               >
                 {mobileControlPanel ? (
-                  <div className="panel ghost-border mb-2 rounded-[16px] px-2 py-2">
+                  <div
+                    className={`panel ghost-border mb-2 rounded-[16px] ${
+                      mobileControlPanel === "actions" ? "px-[2px] py-[2px]" : "px-2 py-2"
+                    }`}
+                  >
                     {mobileControlPanel === "speed" ? (
                       <div className="min-w-0">
                         <div className="flex items-center justify-between gap-3">
@@ -298,21 +302,21 @@ export function GameScreen() {
                     ) : null}
 
                     {mobileControlPanel === "actions" ? (
-                      <div className="flex gap-2 overflow-x-auto pb-1">
-                        <button
-                          className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
-                          onClick={() => randomizeWorld(worldId)}
-                        >
-                          <Shuffle size={14} />
-                          Randomize
-                        </button>
-                        <button
-                          className="control-button shrink-0 justify-center px-2.5 py-1 text-[12px]"
-                          onClick={() => clearWorld(worldId)}
-                        >
-                          <Trash2 size={14} />
-                          Clear
-                        </button>
+                      <div className="overflow-x-auto px-1 pt-1 pb-1">
+                        <div className="flex min-w-max justify-center gap-2">
+                          <ResponsiveIconButton
+                            icon={<Shuffle size={16} />}
+                            mobileLabel="Randomize"
+                            onClick={() => randomizeWorld(worldId)}
+                            className="!min-w-[82px] !px-2 !py-1.5"
+                          />
+                          <ResponsiveIconButton
+                            icon={<Trash2 size={16} />}
+                            mobileLabel="Clear"
+                            onClick={() => clearWorld(worldId)}
+                            className="!min-w-[70px] !px-2 !py-1.5"
+                          />
+                        </div>
                       </div>
                     ) : null}
 
@@ -463,7 +467,7 @@ export function GameScreen() {
                               <div className="flex items-center gap-2">
                                 <span className="font-display text-base text-white">{pattern.name}</span>
                               </div>
-                              <span className="mt-0.5 block text-[11px] text-slate-500">
+                              <span className="mt-0.5 block text-[13px] text-slate-500">
                                 {pattern.width}x{pattern.height}
                               </span>
                             </div>

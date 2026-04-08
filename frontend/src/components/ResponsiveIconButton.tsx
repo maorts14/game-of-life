@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 type CommonProps = {
@@ -56,6 +56,33 @@ function ButtonContent({ icon, mobileLabel, desktopLabel }: Pick<CommonProps, "i
 }
 
 export function ResponsiveIconButton(props: ResponsiveIconButtonProps) {
+  const [isClickPulseActive, setIsClickPulseActive] = useState(false);
+  const pulseFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pulseFrameRef.current !== null) {
+        window.cancelAnimationFrame(pulseFrameRef.current);
+      }
+    };
+  }, []);
+
+  function triggerClickPulse() {
+    if (props.active) {
+      return;
+    }
+
+    setIsClickPulseActive(false);
+    if (pulseFrameRef.current !== null) {
+      window.cancelAnimationFrame(pulseFrameRef.current);
+    }
+
+    pulseFrameRef.current = window.requestAnimationFrame(() => {
+      pulseFrameRef.current = null;
+      setIsClickPulseActive(true);
+    });
+  }
+
   const content = (
     <ButtonContent
       icon={props.icon}
@@ -66,7 +93,13 @@ export function ResponsiveIconButton(props: ResponsiveIconButtonProps) {
 
   if ("to" in props && props.to) {
     return (
-      <Link to={props.to} className={getButtonClasses(props)} data-accent={props.accent ? "true" : undefined}>
+      <Link
+        to={props.to}
+        className={joinClasses(getButtonClasses(props), isClickPulseActive && "button-click-flash")}
+        data-accent={props.accent ? "true" : undefined}
+        onPointerDown={triggerClickPulse}
+        onAnimationEnd={() => setIsClickPulseActive(false)}
+      >
         {content}
       </Link>
     );
@@ -76,8 +109,10 @@ export function ResponsiveIconButton(props: ResponsiveIconButtonProps) {
     <button
       type={props.type ?? "button"}
       onClick={props.onClick}
-      className={getButtonClasses(props)}
+      className={joinClasses(getButtonClasses(props), isClickPulseActive && "button-click-flash")}
       data-accent={props.accent ? "true" : undefined}
+      onPointerDown={triggerClickPulse}
+      onAnimationEnd={() => setIsClickPulseActive(false)}
     >
       {content}
     </button>
