@@ -13,6 +13,13 @@
   --text-main: #f4f7f7;
   --accent: #00f0ff;
   --grid-line: rgba(132, 148, 149, 0.08);
+  --app-stable-vh: 100vh;
+}
+
+@supports (height: 100lvh) {
+  :root {
+    --app-stable-vh: 100lvh;
+  }
 }
 
 * {
@@ -27,7 +34,7 @@ body,
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: var(--app-stable-vh);
   font-family: var(--font-body);
   background-color: var(--surface-0);
   color: var(--text-main);

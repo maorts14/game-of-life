@@ -50,7 +50,7 @@ export function WorldsScreen() {
   }
 
   return (
-    <main className="page-fade relative h-[100dvh] overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
+    <main className="page-fade relative h-[var(--app-stable-vh)] overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
       <BackgroundLifeCanvas
         className="absolute inset-0 h-full w-full opacity-55"
         cellSize={20}

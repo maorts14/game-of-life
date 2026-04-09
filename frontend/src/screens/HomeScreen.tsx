@@ -4,11 +4,11 @@ import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
 
 export function HomeScreen() {
   return (
-    <main className="page-fade relative min-h-screen overflow-hidden">
+    <main className="page-fade relative min-h-[var(--app-stable-vh)] overflow-hidden">
       <BackgroundLifeCanvas className="absolute inset-0 h-full w-full opacity-80" />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,6,6,0.9)_0%,rgba(6,6,6,0.65)_42%,rgba(6,6,6,0.85)_100%)]" />
 
-      <section className="relative z-10 flex min-h-screen items-center px-8 py-16 xl:px-20">
+      <section className="relative z-10 flex min-h-[var(--app-stable-vh)] items-center px-8 py-16 xl:px-20">
         <div className="max-w-3xl">
           <p className="mb-6 text-xs uppercase tracking-[0.5em] text-cyan-200/70">
             The Kinetic Void

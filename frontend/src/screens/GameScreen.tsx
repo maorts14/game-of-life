@@ -140,7 +140,7 @@ export function GameScreen() {
   }
 
   return (
-    <main className="page-fade h-[100dvh] overflow-hidden px-2 py-2 sm:min-h-screen sm:px-3 sm:py-3 xl:h-screen xl:px-4 xl:py-4">
+    <main className="page-fade h-[var(--app-stable-vh)] overflow-hidden px-2 py-2 sm:px-3 sm:py-3 xl:px-4 xl:py-4">
       <PatternSaveModal
         isOpen={pendingPatternSelection !== null}
         patternPreview={pendingPatternSelection}
@@ -163,7 +163,7 @@ export function GameScreen() {
           setIsPatternPickerOpen(true);
         }}
       />
-      <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(100vh-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
+      <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(var(--app-stable-vh)-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
         <header className="panel ghost-border grid grid-cols-[46px_minmax(0,1fr)] items-stretch gap-2.5 rounded-[20px] px-3 py-2 sm:hidden">
           <ResponsiveIconButton
             to="/"
