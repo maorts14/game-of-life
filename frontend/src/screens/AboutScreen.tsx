@@ -4,7 +4,7 @@ import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
 
 export function AboutScreen() {
   return (
-    <main className="page-fade relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
+    <main className="page-fade relative min-h-[var(--app-stable-vh)] overflow-hidden px-4 py-6 sm:px-6 sm:py-8 xl:px-16 xl:py-10">
       <BackgroundLifeCanvas
         className="absolute inset-0 h-full w-full opacity-55"
         cellSize={20}
@@ -21,7 +21,7 @@ export function AboutScreen() {
           className="!min-w-0 !gap-0.5 !px-0.5 !py-1"
         />
       </div>
-      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-7xl grid-cols-1 gap-8 pt-14 sm:pt-0 xl:min-h-[calc(100vh-5rem)] xl:gap-10 xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="relative z-10 mx-auto grid min-h-[calc(var(--app-stable-vh)-3rem)] max-w-7xl grid-cols-1 gap-8 pt-14 sm:pt-0 xl:min-h-[calc(var(--app-stable-vh)-5rem)] xl:gap-10 xl:grid-cols-[0.8fr_1.2fr]">
         <div className="flex flex-col justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/70">The Protocol</p>
