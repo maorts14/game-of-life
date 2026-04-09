@@ -261,6 +261,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
 
   const baseOffset = getBaseOffset(scale);
   const transform = `translate(${baseOffset.x + pan.x}px, ${baseOffset.y + pan.y}px) scale(${scale})`;
+  const viewportTouchAction = activePattern ? "none" : "pan-y";
 
   function resolveClientPoint(clientX: number, clientY: number) {
     const rect = viewportRef.current?.getBoundingClientRect();
@@ -495,7 +496,8 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onContextMenu={(event) => event.preventDefault()}
-      className="relative h-full w-full overflow-hidden rounded-[4px] sm:rounded-[6px] touch-none"
+      className="relative h-full w-full overflow-hidden rounded-[4px] sm:rounded-[6px]"
+      style={{ touchAction: viewportTouchAction }}
     >
       <canvas
         ref={canvasRef}
