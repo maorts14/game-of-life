@@ -35,10 +35,14 @@ export function PatternSaveModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-6 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-6 backdrop-blur-sm"
+      onClick={handleClose}
+    >
       <form
         onSubmit={handleSubmit}
         className="panel ghost-border w-full max-w-lg rounded-[28px] px-8 py-8"
+        onClick={(event) => event.stopPropagation()}
       >
         <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/70">New Pattern</p>
         <h2 className="font-display mt-3 text-4xl text-white">Save captured selection</h2>
