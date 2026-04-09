@@ -49,6 +49,15 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
   const touchPatternPreviewArmedRef = useRef(false);
   const touchPatternMovedRef = useRef(false);
   const touchPatternStartCellRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingTouchDrawRef = useRef<{
+    pointerId: number;
+    startCell: { x: number; y: number };
+    lastCell: { x: number; y: number };
+    startClientX: number;
+    startClientY: number;
+    value: 0 | 1;
+    started: boolean;
+  } | null>(null);
   const touchPointsRef = useRef<Map<number, { clientX: number; clientY: number }>>(new Map());
   const pinchStateRef = useRef<{
     distance: number;
@@ -63,6 +72,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const TOUCH_DRAW_ACTIVATION_DISTANCE = 8;
   const maxScale =
     (viewportSize.width > 0
       ? viewportSize.width < 640
@@ -287,6 +297,22 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
     return resolveClientPoint(event.clientX, event.clientY);
   }
 
+  function isCellWithinBounds(cell: { x: number; y: number }) {
+    return cell.x >= 0 && cell.y >= 0 && cell.x < metrics.width && cell.y < metrics.height;
+  }
+
+  function beginPendingTouchDraw() {
+    const pendingTouchDraw = pendingTouchDrawRef.current;
+    if (!pendingTouchDraw || pendingTouchDraw.started) {
+      return;
+    }
+
+    pendingTouchDraw.started = true;
+    pointerValueRef.current = pendingTouchDraw.value;
+    isPointerDownRef.current = true;
+    onToggleCell(pendingTouchDraw.startCell.x, pendingTouchDraw.startCell.y);
+  }
+
   function beginPinchGesture() {
     const points = Array.from(touchPointsRef.current.values()).slice(0, 2);
     const rect = viewportRef.current?.getBoundingClientRect();
@@ -312,6 +338,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       contentX: (midpointX - baseOffset.x - pan.x) / scale,
       contentY: (midpointY - baseOffset.y - pan.y) / scale,
     };
+    pendingTouchDrawRef.current = null;
     isPointerDownRef.current = false;
     isPanningRef.current = false;
   }
@@ -346,6 +373,23 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
         event.currentTarget.setPointerCapture(event.pointerId);
         return;
       }
+
+      const touchCell = resolveCell(event);
+      if (!isCellWithinBounds(touchCell)) {
+        return;
+      }
+
+      pendingTouchDrawRef.current = {
+        pointerId: event.pointerId,
+        startCell: touchCell,
+        lastCell: touchCell,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        value: grid[touchCell.y][touchCell.x] === 1 ? 0 : 1,
+        started: false,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
     }
 
     if (isSelectionMode) {
@@ -438,6 +482,41 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       return;
     }
 
+    if (
+      event.pointerType === "touch" &&
+      pendingTouchDrawRef.current &&
+      pendingTouchDrawRef.current.pointerId === event.pointerId
+    ) {
+      const pendingTouchDraw = pendingTouchDrawRef.current;
+      const nextCell = resolveCell(event);
+      const movementDistance = Math.hypot(
+        event.clientX - pendingTouchDraw.startClientX,
+        event.clientY - pendingTouchDraw.startClientY,
+      );
+
+      if (
+        isCellWithinBounds(nextCell) &&
+        (movementDistance >= TOUCH_DRAW_ACTIVATION_DISTANCE ||
+          nextCell.x !== pendingTouchDraw.startCell.x ||
+          nextCell.y !== pendingTouchDraw.startCell.y)
+      ) {
+        beginPendingTouchDraw();
+      }
+
+      if (!pendingTouchDraw.started) {
+        return;
+      }
+
+      if (
+        isCellWithinBounds(nextCell) &&
+        (nextCell.x !== pendingTouchDraw.lastCell.x || nextCell.y !== pendingTouchDraw.lastCell.y)
+      ) {
+        onPaintCell(nextCell.x, nextCell.y, pointerValueRef.current);
+        pendingTouchDraw.lastCell = nextCell;
+      }
+      return;
+    }
+
     const nextCell = resolveCell(event);
     if (activePattern) {
       if (
@@ -510,6 +589,23 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
         isPanningRef.current = false;
         return;
       }
+
+      if (
+        pendingTouchDrawRef.current &&
+        pendingTouchDrawRef.current.pointerId === event.pointerId
+      ) {
+        if (!pendingTouchDrawRef.current.started) {
+          onToggleCell(
+            pendingTouchDrawRef.current.startCell.x,
+            pendingTouchDrawRef.current.startCell.y,
+          );
+        }
+
+        pendingTouchDrawRef.current = null;
+        isPointerDownRef.current = false;
+        isPanningRef.current = false;
+        return;
+      }
     }
 
     if (activePattern && isPatternDraggingRef.current) {
@@ -558,6 +654,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
     isPointerDownRef.current = false;
     isPanningRef.current = false;
     isPatternDraggingRef.current = false;
+    pendingTouchDrawRef.current = null;
     touchPatternMovedRef.current = false;
     touchPatternStartCellRef.current = null;
   }
