@@ -77,6 +77,7 @@ button {
   background: rgba(35, 35, 35, 0.92);
 }
 
+/* Lead call-to-action buttons should use the accent treatment via data-accent="true". */
 .control-button[data-accent="true"] {
   background: radial-gradient(circle at top, rgba(125, 244, 255, 0.5), rgba(0, 240, 255, 0.85));
   color: #00292d;
@@ -96,6 +97,10 @@ button {
 
 .glow-pulse {
   animation: glow-pulse 5s ease-in-out infinite;
+}
+
+.button-click-flash {
+  animation: button-click-flash 420ms ease-out;
 }
 
 @keyframes page-fade {
@@ -118,5 +123,25 @@ button {
 
   50% {
     box-shadow: 0 0 30px rgba(0, 240, 255, 0.16);
+  }
+}
+
+@keyframes button-click-flash {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(255, 255, 255, 0),
+      0 0 0 rgba(255, 255, 255, 0);
+  }
+
+  35% {
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.22),
+      0 0 18px rgba(255, 255, 255, 0.12);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 10px rgba(255, 255, 255, 0),
+      0 0 0 rgba(255, 255, 255, 0);
   }
 }

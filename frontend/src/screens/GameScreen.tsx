@@ -1,9 +1,25 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, Info, Minus, Pause, Play, Plus, Shuffle, StepForward, Trash2 } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Gauge,
+  Info,
+  LocateFixed,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  Shapes,
+  Shuffle,
+  StepForward,
+  Trash2,
+  Wrench,
+} from "lucide-react";
+import { Navigate, useParams } from "react-router-dom";
 import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
 import { GameCanvas } from "../components/GameCanvas";
+import type { GameCanvasHandle } from "../components/GameCanvas";
 import { PatternSaveModal } from "../components/PatternSaveModal";
+import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
 import { paintCell, useGameStore, usePatterns, usePopulation, useSelectedWorld } from "../store/gameStore";
 
 export function GameScreen() {
@@ -15,10 +31,12 @@ export function GameScreen() {
   const [hoveredInfoPatternId, setHoveredInfoPatternId] = useState<string | null>(null);
   const [activePatternId, setActivePatternId] = useState<string | null>(null);
   const [isPatternCaptureMode, setIsPatternCaptureMode] = useState(false);
+  const [mobileControlPanel, setMobileControlPanel] = useState<"speed" | "actions" | "patterns" | null>(null);
   const [pendingPatternCellCount, setPendingPatternCellCount] = useState(0);
   const [pendingPatternSelection, setPendingPatternSelection] = useState<ReturnType<
     typeof createPatternFromSelection
   > | null>(null);
+  const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
   const isRunning = useGameStore((state) => state.isRunning);
   const speed = useGameStore((state) => state.speed);
   const updateGrid = useGameStore((state) => state.updateGrid);
@@ -47,6 +65,40 @@ export function GameScreen() {
   }, [isRunning, speed, stepWorld, worldId]);
 
   useEffect(() => () => setRunning(false), [setRunning]);
+
+  useEffect(() => {
+    if (!activePatternId) {
+      return undefined;
+    }
+
+    function handleDesktopPatternPlacement(event: PointerEvent) {
+      if (event.pointerType === "touch" || event.button !== 0) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (
+        target.closest(
+          "button, a, input, textarea, select, label, [role='button'], [data-skip-pattern-drop='true']",
+        )
+      ) {
+        return;
+      }
+
+      gameCanvasRef.current?.dropPatternAtClientPoint(event.clientX, event.clientY);
+      setActivePatternId(null);
+    }
+
+    document.addEventListener("pointerdown", handleDesktopPatternPlacement);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleDesktopPatternPlacement);
+    };
+  }, [activePatternId]);
 
   if (!worldId || !world) {
     return <Navigate to="/worlds" replace />;
@@ -88,7 +140,7 @@ export function GameScreen() {
   }
 
   return (
-    <main className="page-fade h-screen overflow-hidden px-3 py-3 xl:px-4 xl:py-4">
+    <main className="page-fade h-[100dvh] overflow-hidden px-2 py-2 sm:min-h-screen sm:px-3 sm:py-3 xl:h-screen xl:px-4 xl:py-4">
       <PatternSaveModal
         isOpen={pendingPatternSelection !== null}
         patternPreview={pendingPatternSelection}
@@ -111,25 +163,53 @@ export function GameScreen() {
           setIsPatternPickerOpen(true);
         }}
       />
-      <div className="flex h-full flex-col rounded-[28px] bg-black/18 px-2 py-2 xl:px-3 xl:py-3">
-        <header className="panel ghost-border flex items-center justify-between rounded-[22px] px-4 py-3 xl:px-5 xl:py-3">
-          <Link to="/" className="control-button">
-            <ArrowLeft size={18} />
-            Save and Exit
-          </Link>
+      <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(100vh-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
+        <header className="panel ghost-border grid grid-cols-[46px_minmax(0,1fr)] items-stretch gap-2.5 rounded-[20px] px-3 py-2 sm:hidden">
+          <ResponsiveIconButton
+            to="/"
+            icon={<ArrowLeft size={18} />}
+            mobileLabel="Exit"
+            desktopLabel="Save and Exit"
+            className="!min-w-0 !self-stretch !justify-center !gap-0.5 !rounded-[12px] !px-0.5 !py-0.5"
+          />
 
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Identifier</p>
-            <h1 className="font-display mt-1 text-xl text-white xl:text-2xl">{world.name}</h1>
+          <div className="flex min-w-0 flex-col justify-center gap-1 px-0.5">
+            <h1 className="font-display truncate text-[1.18rem] leading-none text-white">
+              {world.name}
+            </h1>
+
+            <div className="flex items-end gap-2">
+              <p className="truncate text-[0.85rem] leading-none uppercase tracking-[0.3em] text-slate-500">
+                Generation
+              </p>
+              <p className="font-display text-[1.05rem] leading-none text-white">
+                {world.generation}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <header className="panel ghost-border hidden items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:flex sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
+          <ResponsiveIconButton
+            to="/"
+            icon={<ArrowLeft size={18} />}
+            mobileLabel="Exit"
+            desktopLabel="Save and Exit"
+            className="!min-w-0 !gap-0.5 !px-0.5 !py-1 sm:px-1.5 sm:py-1"
+          />
+
+          <div className="min-w-0 flex-1 text-center">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Name</p>
+            <h1 className="font-display mt-1 truncate text-lg text-white sm:text-xl xl:text-2xl">{world.name}</h1>
           </div>
 
           <div className="text-right">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Generation</p>
-            <p className="font-display mt-1 text-2xl text-white xl:text-3xl">{world.generation}</p>
+            <p className="font-display mt-1 text-xl text-white sm:text-2xl xl:text-3xl">{world.generation}</p>
           </div>
         </header>
 
-        <section className="grid min-h-0 flex-1 grid-cols-1 gap-3 py-3 xl:grid-cols-[180px_minmax(0,1fr)_220px]">
+        <section className="grid min-h-0 flex-1 grid-cols-1 gap-1 pt-1 pb-0.5 xl:grid-cols-[180px_minmax(0,1fr)_220px] xl:gap-3 xl:py-3">
           <aside className="panel ghost-border hidden min-h-0 rounded-[24px] p-5 xl:block">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Telemetry</p>
             <div className="mt-6 space-y-6">
@@ -150,9 +230,32 @@ export function GameScreen() {
             </div>
           </aside>
 
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-[26px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-0 xl:px-3 xl:pb-3">
-            <div className="min-h-0 w-full flex-1">
+          <div className="relative flex min-h-0 flex-col overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.1),transparent_35%),rgba(13,13,13,0.9)] px-2 pb-2 pt-2 xl:overflow-visible xl:rounded-[26px] xl:px-3 xl:pb-3 xl:pt-0">
+            <div className="panel ghost-border mb-2.5 grid grid-cols-3 gap-1 rounded-[16px] px-2 py-1.5 xl:mb-2 xl:hidden">
+              <div className="px-0.5 py-0.5 text-center">
+                <p className="font-display text-base leading-none text-white">{population}</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Population</p>
+              </div>
+              <div className="px-0.5 py-0.5 text-center">
+                <p className="font-display text-base leading-none text-white">{density}%</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Occupancy</p>
+              </div>
+              <div className="px-0.5 py-0.5 text-center">
+                <p className="font-display text-base leading-none text-white">
+                  {world.width}x{world.height}
+                </p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Grid</p>
+              </div>
+            </div>
+            <div
+              className={`min-h-0 w-full flex-1 transition-[margin] duration-200 ${
+                activePatternId ? "xl:mb-[25px]" : ""
+              }`}
+            >
               <GameCanvas
+                ref={(instance) => {
+                  gameCanvasRef.current = instance;
+                }}
                 grid={world.grid}
                 activePatternId={activePatternId}
                 patterns={customPatterns}
@@ -172,16 +275,184 @@ export function GameScreen() {
                 onSelectionComplete={handleSelectionComplete}
               />
             </div>
-            <div className="flex h-11 items-center justify-center pt-6">
-              {activePatternId ? (
+            {activePatternId ? (
+              <div className="pointer-events-none absolute bottom-0 left-1/2 z-10 hidden -translate-x-1/2 translate-y-1/2 xl:flex">
                 <button
-                  className="flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                  className="pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-4 text-sm text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
                   onClick={() => setActivePatternId(null)}
                 >
                   <Trash2 size={16} />
                   Cancel
                 </button>
+              </div>
+            ) : null}
+            <div className="relative mt-2.5 xl:hidden">
+              {activePatternId ? (
+                <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2">
+                  <button
+                    className="pointer-events-auto flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3.5 py-1.5 text-[13px] text-red-100 shadow-[0_0_18px_rgba(220,38,38,0.12)] transition hover:bg-red-500/18 hover:text-white"
+                    onClick={() => setActivePatternId(null)}
+                  >
+                    <Trash2 size={16} />
+                    Cancel
+                  </button>
+                </div>
               ) : null}
+
+              <div
+                className={`transition-transform duration-200 ease-out ${
+                  activePatternId ? "translate-y-11" : "translate-y-0"
+                }`}
+              >
+                {mobileControlPanel ? (
+                  <div
+                    className={`panel ghost-border mb-2 rounded-[16px] ${
+                      mobileControlPanel === "actions" ? "px-[2px] py-[2px]" : "px-2 py-2"
+                    }`}
+                  >
+                    {mobileControlPanel === "speed" ? (
+                      <div className="min-w-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">Speed</span>
+                          <span className="font-display text-base text-white">{speed}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={1}
+                          max={20}
+                          value={speed}
+                          onChange={(event) => setSpeed(Number(event.target.value))}
+                          className="mt-2 h-1 w-full accent-cyan-300"
+                        />
+                      </div>
+                    ) : null}
+
+                    {mobileControlPanel === "actions" ? (
+                      <div className="overflow-x-auto px-1 pt-1 pb-1">
+                        <div className="flex min-w-max justify-center gap-2">
+                          <ResponsiveIconButton
+                            icon={<LocateFixed size={16} />}
+                            mobileLabel="Center"
+                            onClick={() => gameCanvasRef.current?.centerBoard()}
+                            className="!min-w-[72px] !px-2 !py-1.5"
+                          />
+                          <ResponsiveIconButton
+                            icon={<Shuffle size={16} />}
+                            mobileLabel="Randomize"
+                            onClick={() => randomizeWorld(worldId)}
+                            className="!min-w-[82px] !px-2 !py-1.5"
+                          />
+                          <ResponsiveIconButton
+                            icon={<Trash2 size={16} />}
+                            mobileLabel="Clear"
+                            onClick={() => clearWorld(worldId)}
+                            className="!min-w-[70px] !px-2 !py-1.5"
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {mobileControlPanel === "patterns" ? (
+                      <div className="flex items-start gap-2.5 overflow-x-auto pb-0.5">
+                        <button
+                          className="mt-[2.5px] inline-flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-[16px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
+                          onClick={() => {
+                            setActivePatternId(null);
+                            setIsPatternCaptureMode(true);
+                          }}
+                          aria-label="Create pattern"
+                        >
+                          <Plus size={20} />
+                        </button>
+                          {patterns.map((pattern) => (
+                            <button
+                              key={`mobile-${pattern.id}`}
+                              className={`flex w-[84px] shrink-0 flex-col items-center justify-start text-center transition ${
+                                activePatternId === pattern.id
+                                  ? "text-cyan-100"
+                                  : "text-white"
+                              }`}
+                              onClick={() => setActivePatternId(pattern.id)}
+                            >
+                              <span
+                              className={`flex h-[50px] w-[84px] items-center justify-center overflow-hidden rounded-[15px] transition ${
+                                activePatternId === pattern.id
+                                  ? "bg-cyan-300/18 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
+                                  : "bg-white/[0.03] hover:bg-white/[0.08]"
+                              }`}
+                            >
+                              <PatternPreview pattern={pattern} size="compact" />
+                            </span>
+                            <span className="mt-1 block w-full truncate px-1 text-[13px] leading-3">
+                              {pattern.name}
+                            </span>
+                            <span className="mt-0.5 block w-full truncate px-1 text-[12px] leading-3 text-slate-500">
+                              {pattern.width}x{pattern.height}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="panel ghost-border rounded-[18px] px-2 py-1.5">
+                  <div className="mb-1.5 flex items-center justify-center gap-2">
+                    <ResponsiveIconButton
+                      icon={<StepForward size={16} />}
+                      mobileLabel="Step"
+                      onClick={() => stepWorld(worldId)}
+                      className="min-w-[60px]"
+                    />
+
+                    {isRunning ? (
+                      <ResponsiveIconButton
+                        icon={<Pause size={16} />}
+                        mobileLabel="Pause"
+                        onClick={() => setRunning(false)}
+                        className="min-w-[60px]"
+                      />
+                    ) : (
+                      <ResponsiveIconButton
+                        icon={<Play size={16} />}
+                        mobileLabel="Play"
+                        onClick={() => setRunning(true)}
+                        accent
+                        className="min-w-[60px]"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex justify-center gap-1.5 overflow-x-auto pb-0.5">
+                    <ResponsiveIconButton
+                      icon={<Gauge size={16} />}
+                      mobileLabel="Speed"
+                      active={mobileControlPanel === "speed"}
+                      onClick={() =>
+                        setMobileControlPanel((value) => (value === "speed" ? null : "speed"))
+                      }
+                    />
+
+                    <ResponsiveIconButton
+                      icon={<Wrench size={16} />}
+                      mobileLabel="Actions"
+                      active={mobileControlPanel === "actions"}
+                      onClick={() =>
+                        setMobileControlPanel((value) => (value === "actions" ? null : "actions"))
+                      }
+                    />
+
+                    <ResponsiveIconButton
+                      icon={<Shapes size={16} />}
+                      mobileLabel="Patterns"
+                      active={mobileControlPanel === "patterns"}
+                      onClick={() =>
+                        setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -199,16 +470,14 @@ export function GameScreen() {
             <div className="mt-3 flex flex-col gap-3">
               {isPatternPickerOpen ? (
                 <button
-                  className="rounded-[18px] border border-dashed border-cyan-300/24 bg-white/[0.03] px-4 py-4 text-left transition hover:border-cyan-300/40 hover:bg-white/[0.05]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] px-4 py-3 text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
                   onClick={() => {
                     setActivePatternId(null);
                     setIsPatternCaptureMode(true);
                   }}
                 >
-                  <span className="font-display text-base text-white">New Pattern</span>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Select a range on the board.
-                  </p>
+                  <Plus size={16} />
+                  <span className="font-display text-base">Create</span>
                 </button>
               ) : null}
               {isPatternPickerOpen
@@ -226,8 +495,13 @@ export function GameScreen() {
                               setActivePatternId(pattern.id);
                             }}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="font-display text-base text-white">{pattern.name}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-display text-base text-white">{pattern.name}</span>
+                              </div>
+                              <span className="mt-0.5 block text-[13px] text-slate-500">
+                                {pattern.width}x{pattern.height}
+                              </span>
                             </div>
                           </button>
                           <div className="flex items-center gap-1">
@@ -260,7 +534,7 @@ export function GameScreen() {
                           </div>
                         </div>
                         <button
-                          className="mt-3 block w-full overflow-hidden rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
+                          className="mt-1.5 block w-full overflow-hidden rounded-[14px] bg-[#0d0d0d] p-3 transition hover:bg-[#141414]"
                           onClick={() => setActivePatternId(pattern.id)}
                         >
                           <PatternPreview pattern={pattern} />
@@ -275,6 +549,13 @@ export function GameScreen() {
               <button className="control-button justify-center py-3" onClick={() => randomizeWorld(worldId)}>
                 <Shuffle size={18} />
                 Randomize
+              </button>
+              <button
+                className="control-button justify-center py-3"
+                onClick={() => gameCanvasRef.current?.centerBoard()}
+              >
+                <LocateFixed size={18} />
+                Center
               </button>
               <button className="control-button justify-center py-3" onClick={() => clearWorld(worldId)}>
                 <Trash2 size={18} />
@@ -337,20 +618,22 @@ export function GameScreen() {
 
 function PatternPreview({
   pattern,
+  size = "default",
 }: {
   pattern: { id: string; width: number; height: number; cells: Array<[number, number]> };
+  size?: "default" | "compact";
 }) {
-  const maxPreviewWidth = 124;
-  const maxPreviewHeight = 72;
-  const previewOptions = [1, 0]
+  const maxPreviewWidth = size === "compact" ? 56 : 124;
+  const maxPreviewHeight = size === "compact" ? 26 : 72;
+  const previewOptions = (size === "compact" ? [1] : [1, 0])
     .flatMap((padding) =>
-      [2, 1, 0.5, 0].map((cellGap) => {
+      (size === "compact" ? [1, 0.5, 0] : [2, 1, 0.5, 0]).map((cellGap) => {
         const columns = Math.max(pattern.width + padding * 2, 1);
         const rows = Math.max(pattern.height + padding * 2, 1);
         const cellSize = Math.max(
-          0.5,
+          size === "compact" ? 0.75 : 0.5,
           Math.min(
-            8,
+            size === "compact" ? 5 : 8,
             Math.min(
               (maxPreviewWidth - (columns - 1) * cellGap) / columns,
               (maxPreviewHeight - (rows - 1) * cellGap) / rows,
@@ -377,7 +660,7 @@ function PatternPreview({
 
   return (
     <div
-      className="mx-auto grid justify-center gap-[2px]"
+      className="mx-auto grid justify-center"
       style={{
         gap: `${cellGap}px`,
         gridTemplateColumns: `repeat(${columns}, ${cellSize}px)`,

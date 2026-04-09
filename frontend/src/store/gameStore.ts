@@ -22,6 +22,7 @@ interface GameState {
   isRunning: boolean;
   speed: number;
   createWorld: (params: { name: string; width: number; height: number }) => string;
+  deleteWorld: (worldId: string) => void;
   selectWorld: (worldId: string) => void;
   updateGrid: (worldId: string, grid: Grid) => void;
   stepWorld: (worldId: string) => void;
@@ -86,6 +87,21 @@ export const useGameStore = create<GameState>()(
 
         return world.id;
       },
+      deleteWorld: (worldId) =>
+        set((state) => {
+          if (!state.worlds[worldId]) {
+            return state;
+          }
+
+          const worlds = { ...state.worlds };
+          delete worlds[worldId];
+
+          return {
+            worlds,
+            currentWorldId: state.currentWorldId === worldId ? null : state.currentWorldId,
+            isRunning: state.currentWorldId === worldId ? false : state.isRunning,
+          };
+        }),
       selectWorld: (worldId) =>
         set({
           currentWorldId: worldId,
