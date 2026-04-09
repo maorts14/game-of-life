@@ -13,6 +13,7 @@ import {
   StepForward,
   Trash2,
   Wrench,
+  X,
 } from "lucide-react";
 import { Navigate, useParams } from "react-router-dom";
 import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
@@ -137,6 +138,15 @@ export function GameScreen() {
 
     setPendingPatternCellCount(liveCount);
     setPendingPatternSelection(created);
+  }
+
+  function handleStartPatternCapture() {
+    setActivePatternId(null);
+    setIsPatternCaptureMode(true);
+  }
+
+  function handleCancelPatternCapture() {
+    setIsPatternCaptureMode(false);
   }
 
   return (
@@ -355,14 +365,15 @@ export function GameScreen() {
                     {mobileControlPanel === "patterns" ? (
                       <div className="flex items-start gap-2.5 overflow-x-auto pb-0.5">
                         <button
-                          className="mt-[2.5px] inline-flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-[16px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
-                          onClick={() => {
-                            setActivePatternId(null);
-                            setIsPatternCaptureMode(true);
-                          }}
-                          aria-label="Create pattern"
+                          className={`mt-[2.5px] inline-flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-[16px] transition ${
+                            isPatternCaptureMode
+                              ? "border border-red-400/24 bg-red-500/12 text-red-100 hover:border-red-400/34 hover:bg-red-500/18 hover:text-white"
+                              : "border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
+                          }`}
+                          onClick={isPatternCaptureMode ? handleCancelPatternCapture : handleStartPatternCapture}
+                          aria-label={isPatternCaptureMode ? "Cancel pattern capture" : "Create pattern"}
                         >
-                          <Plus size={20} />
+                          {isPatternCaptureMode ? <X size={20} /> : <Plus size={20} />}
                         </button>
                           {patterns.map((pattern) => (
                             <button
@@ -470,14 +481,15 @@ export function GameScreen() {
             <div className="mt-3 flex flex-col gap-3">
               {isPatternPickerOpen ? (
                 <button
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] px-4 py-3 text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
-                  onClick={() => {
-                    setActivePatternId(null);
-                    setIsPatternCaptureMode(true);
-                  }}
+                  className={`inline-flex w-full items-center justify-center gap-2 rounded-[18px] px-4 py-3 transition ${
+                    isPatternCaptureMode
+                      ? "border border-red-400/24 bg-red-500/12 text-red-100 hover:border-red-400/34 hover:bg-red-500/18 hover:text-white"
+                      : "border border-dashed border-cyan-300/24 bg-cyan-300/[0.06] text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-300/[0.1]"
+                  }`}
+                  onClick={isPatternCaptureMode ? handleCancelPatternCapture : handleStartPatternCapture}
                 >
-                  <Plus size={16} />
-                  <span className="font-display text-base">Create</span>
+                  {isPatternCaptureMode ? <X size={16} /> : <Plus size={16} />}
+                  <span className="font-display text-base">{isPatternCaptureMode ? "Cancel" : "Create"}</span>
                 </button>
               ) : null}
               {isPatternPickerOpen
