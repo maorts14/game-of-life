@@ -423,7 +423,7 @@ export function GameScreen() {
                     )}
                   </div>
 
-                  <div className="flex justify-center gap-1.5 overflow-x-auto pb-0.5">
+                  <div className="flex justify-center gap-1.5 overflow-x-auto overflow-y-visible px-1 pt-1 pb-1">
                     <ResponsiveIconButton
                       icon={<Gauge size={16} />}
                       mobileLabel="Speed"
