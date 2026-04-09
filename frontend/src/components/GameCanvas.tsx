@@ -49,6 +49,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
   const touchPatternPreviewArmedRef = useRef(false);
   const touchPatternMovedRef = useRef(false);
   const touchPatternStartCellRef = useRef<{ x: number; y: number } | null>(null);
+  const touchPatternStartHoverCellRef = useRef<{ x: number; y: number } | null>(null);
   const pendingTouchDrawRef = useRef<{
     pointerId: number;
     startCell: { x: number; y: number };
@@ -146,6 +147,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
     touchPatternPreviewArmedRef.current = false;
     touchPatternMovedRef.current = false;
     touchPatternStartCellRef.current = null;
+    touchPatternStartHoverCellRef.current = null;
   }, [activePatternId]);
 
   useEffect(() => {
@@ -410,6 +412,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
         isPatternDraggingRef.current = true;
         touchPatternMovedRef.current = false;
         touchPatternStartCellRef.current = { x, y };
+        touchPatternStartHoverCellRef.current = hoverCell ? { ...hoverCell } : null;
         if (!touchPatternPreviewArmedRef.current || hoverCell === null) {
           setHoverCell({ x, y });
         }
@@ -527,7 +530,24 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       ) {
         touchPatternMovedRef.current = true;
       }
-      setHoverCell(nextCell);
+
+      if (
+        event.pointerType === "touch" &&
+        isPatternDraggingRef.current &&
+        touchPatternStartCellRef.current &&
+        touchPatternPreviewArmedRef.current &&
+        touchPatternStartHoverCellRef.current
+      ) {
+        const deltaX = nextCell.x - touchPatternStartCellRef.current.x;
+        const deltaY = nextCell.y - touchPatternStartCellRef.current.y;
+
+        setHoverCell({
+          x: touchPatternStartHoverCellRef.current.x + deltaX,
+          y: touchPatternStartHoverCellRef.current.y + deltaY,
+        });
+      } else {
+        setHoverCell(nextCell);
+      }
     } else if (
       nextCell.x >= 0 &&
       nextCell.y >= 0 &&
@@ -614,11 +634,14 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
         const nextHoverCell = hoverCell ?? { x, y };
 
         if (touchPatternMovedRef.current || !touchPatternPreviewArmedRef.current) {
-          setHoverCell({ x, y });
+          if (!touchPatternPreviewArmedRef.current || hoverCell === null) {
+            setHoverCell({ x, y });
+          }
           touchPatternPreviewArmedRef.current = true;
           isPatternDraggingRef.current = false;
           touchPatternMovedRef.current = false;
           touchPatternStartCellRef.current = null;
+          touchPatternStartHoverCellRef.current = null;
           return;
         }
 
@@ -627,6 +650,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
         isPatternDraggingRef.current = false;
         touchPatternMovedRef.current = false;
         touchPatternStartCellRef.current = null;
+        touchPatternStartHoverCellRef.current = null;
         setHoverCell(null);
         return;
       }
@@ -636,6 +660,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
       isPatternDraggingRef.current = false;
       touchPatternMovedRef.current = false;
       touchPatternStartCellRef.current = null;
+      touchPatternStartHoverCellRef.current = null;
       setHoverCell(null);
       return;
     }
@@ -657,6 +682,7 @@ export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function
     pendingTouchDrawRef.current = null;
     touchPatternMovedRef.current = false;
     touchPatternStartCellRef.current = null;
+    touchPatternStartHoverCellRef.current = null;
   }
 
   function handleWheel(event: WheelEvent<HTMLDivElement>) {
