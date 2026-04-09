@@ -15,6 +15,31 @@ import type { Grid, World, WorldSummary } from "../features/game/types";
 
 const DEFAULT_WORLD_NAME = "Void Core";
 
+function createId() {
+  const cryptoObject = globalThis.crypto;
+
+  if (typeof cryptoObject?.randomUUID === "function") {
+    return cryptoObject.randomUUID();
+  }
+
+  if (typeof cryptoObject?.getRandomValues === "function") {
+    const bytes = cryptoObject.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
+    return [
+      hex.slice(0, 4).join(""),
+      hex.slice(4, 6).join(""),
+      hex.slice(6, 8).join(""),
+      hex.slice(8, 10).join(""),
+      hex.slice(10, 16).join(""),
+    ].join("-");
+  }
+
+  return `world-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
 interface GameState {
   worlds: Record<string, World>;
   customPatterns: PatternDefinition[];
@@ -22,6 +47,7 @@ interface GameState {
   isRunning: boolean;
   speed: number;
   createWorld: (params: { name: string; width: number; height: number }) => string;
+  deleteWorld: (worldId: string) => void;
   selectWorld: (worldId: string) => void;
   updateGrid: (worldId: string, grid: Grid) => void;
   stepWorld: (worldId: string) => void;
@@ -37,7 +63,7 @@ interface GameState {
 function createWorldRecord(name: string, width: number, height: number): World {
   const now = new Date().toISOString();
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     name: name.trim() || DEFAULT_WORLD_NAME,
     width,
     height,
@@ -86,6 +112,21 @@ export const useGameStore = create<GameState>()(
 
         return world.id;
       },
+      deleteWorld: (worldId) =>
+        set((state) => {
+          if (!state.worlds[worldId]) {
+            return state;
+          }
+
+          const worlds = { ...state.worlds };
+          delete worlds[worldId];
+
+          return {
+            worlds,
+            currentWorldId: state.currentWorldId === worldId ? null : state.currentWorldId,
+            isRunning: state.currentWorldId === worldId ? false : state.isRunning,
+          };
+        }),
       selectWorld: (worldId) =>
         set({
           currentWorldId: worldId,

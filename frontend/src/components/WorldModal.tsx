@@ -16,23 +16,40 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
     return null;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    onCreate({
-      name,
-      width: clamp(width, 12, 120),
-      height: clamp(height, 12, 80),
-    });
+  function resetForm() {
     setName("");
     setWidth(48);
     setHeight(32);
   }
 
+  function handleClose() {
+    resetForm();
+    onClose();
+  }
+
+  function handleCreate() {
+    onCreate({
+      name,
+      width: clamp(Number.isFinite(width) ? width : 48, 12, 120),
+      height: clamp(Number.isFinite(height) ? height : 32, 12, 80),
+    });
+    resetForm();
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleCreate();
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm"
+      onClick={handleClose}
+    >
       <form
         onSubmit={handleSubmit}
         className="panel ghost-border w-full max-w-xl rounded-[28px] px-8 py-8"
+        onClick={(event) => event.stopPropagation()}
       >
         <p className="mb-2 text-xs uppercase tracking-[0.35em] text-cyan-200/70">
           New Simulation
@@ -87,10 +104,15 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
         </div>
 
         <div className="mt-10 flex justify-end gap-4">
-          <button type="button" className="control-button" onClick={onClose}>
+          <button type="button" className="control-button" onClick={handleClose}>
             Cancel
           </button>
-          <button type="submit" className="control-button" data-accent="true">
+          <button
+            type="button"
+            className="control-button"
+            data-accent="true"
+            onClick={handleCreate}
+          >
             Create
           </button>
         </div>
