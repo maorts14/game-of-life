@@ -1,7 +1,21 @@
-import { PointerEvent, WheelEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  PointerEvent,
+  WheelEvent,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { getPatternById } from "../features/game/presets";
 import type { PatternDefinition, SelectionBounds } from "../features/game/presets";
 import type { Grid } from "../features/game/types";
+
+export interface GameCanvasHandle {
+  dropPatternAtClientPoint: (clientX: number, clientY: number) => void;
+  centerBoard: () => void;
+}
 
 interface GameCanvasProps {
   grid: Grid;
@@ -14,7 +28,7 @@ interface GameCanvasProps {
   onSelectionComplete?: (selection: SelectionBounds) => void;
 }
 
-export function GameCanvas({
+export const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCanvas({
   grid,
   onToggleCell,
   onPaintCell,
@@ -23,12 +37,35 @@ export function GameCanvas({
   onDropPattern,
   isSelectionMode = false,
   onSelectionComplete,
-}: GameCanvasProps) {
+}, ref) {
+  const MIN_SCALE = 0.3;
+  const MAX_SCALE = 7;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pointerValueRef = useRef<0 | 1>(1);
   const isPointerDownRef = useRef(false);
   const isPanningRef = useRef(false);
+  const isPatternDraggingRef = useRef(false);
+  const touchPatternPreviewArmedRef = useRef(false);
+  const touchPatternMovedRef = useRef(false);
+  const touchPatternStartCellRef = useRef<{ x: number; y: number } | null>(null);
+  const touchPatternStartHoverCellRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingTouchDrawRef = useRef<{
+    pointerId: number;
+    startCell: { x: number; y: number };
+    lastCell: { x: number; y: number };
+    startClientX: number;
+    startClientY: number;
+    value: 0 | 1;
+    started: boolean;
+  } | null>(null);
+  const touchPointsRef = useRef<Map<number, { clientX: number; clientY: number }>>(new Map());
+  const pinchStateRef = useRef<{
+    distance: number;
+    scale: number;
+    contentX: number;
+    contentY: number;
+  } | null>(null);
   const panStartRef = useRef({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -36,18 +73,29 @@ export function GameCanvas({
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const TOUCH_DRAW_ACTIVATION_DISTANCE = 8;
+  const maxScale =
+    (viewportSize.width > 0
+      ? viewportSize.width < 640
+      : typeof window !== "undefined" && window.innerWidth < 640)
+      ? MAX_SCALE * 2
+      : MAX_SCALE;
 
   const metrics = useMemo(() => {
     const width = grid[0]?.length ?? 0;
     const height = grid.length;
     const viewportWidth =
-      typeof window === "undefined"
-        ? 1400
-        : Math.max(320, window.innerWidth - (window.innerWidth >= 1280 ? 560 : 96));
+      viewportSize.width > 0
+        ? viewportSize.width
+        : typeof window === "undefined"
+          ? 1400
+          : Math.max(320, window.innerWidth - (window.innerWidth >= 1280 ? 560 : 96));
     const viewportHeight =
-      typeof window === "undefined"
-        ? 820
-        : Math.max(240, window.innerHeight - (window.innerWidth >= 1280 ? 240 : 220));
+      viewportSize.height > 0
+        ? viewportSize.height
+        : typeof window === "undefined"
+          ? 820
+          : Math.max(240, window.innerHeight - (window.innerWidth >= 1280 ? 240 : 220));
     const cellSize = Math.max(
       4,
       Math.floor(
@@ -61,7 +109,7 @@ export function GameCanvas({
       canvasWidth: width * cellSize,
       canvasHeight: height * cellSize,
     };
-  }, [grid]);
+  }, [grid, viewportSize.height, viewportSize.width]);
 
   useEffect(() => {
     if (!viewportRef.current) {
@@ -94,6 +142,13 @@ export function GameCanvas({
       setSelectionEnd(null);
     }
   }, [isSelectionMode]);
+
+  useEffect(() => {
+    touchPatternPreviewArmedRef.current = false;
+    touchPatternMovedRef.current = false;
+    touchPatternStartCellRef.current = null;
+    touchPatternStartHoverCellRef.current = null;
+  }, [activePatternId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -196,36 +251,149 @@ export function GameCanvas({
   function clampPan(nextScale: number, nextPan: { x: number; y: number }) {
     const scaledWidth = metrics.canvasWidth * nextScale;
     const scaledHeight = metrics.canvasHeight * nextScale;
+    const baseOffset = getBaseOffset(nextScale);
+    const halfViewportWidth = viewportSize.width / 2;
+    const halfViewportHeight = viewportSize.height / 2;
 
     return {
-      x:
-        scaledWidth <= viewportSize.width
-          ? 0
-          : Math.min(0, Math.max(viewportSize.width - scaledWidth, nextPan.x)),
-      y:
-        scaledHeight <= viewportSize.height
-          ? 0
-          : Math.min(0, Math.max(viewportSize.height - scaledHeight, nextPan.y)),
+      x: Math.min(
+        halfViewportWidth - baseOffset.x,
+        Math.max(halfViewportWidth - baseOffset.x - scaledWidth, nextPan.x),
+      ),
+      y: Math.min(
+        halfViewportHeight - baseOffset.y,
+        Math.max(halfViewportHeight - baseOffset.y - scaledHeight, nextPan.y),
+      ),
+    };
+  }
+
+  function getCenteredPan(nextScale: number) {
+    const scaledWidth = metrics.canvasWidth * nextScale;
+    const scaledHeight = metrics.canvasHeight * nextScale;
+    const nextBaseOffset = getBaseOffset(nextScale);
+
+    return {
+      x: (viewportSize.width - scaledWidth) / 2 - nextBaseOffset.x,
+      y: (viewportSize.height - scaledHeight) / 2 - nextBaseOffset.y,
     };
   }
 
   const baseOffset = getBaseOffset(scale);
   const transform = `translate(${baseOffset.x + pan.x}px, ${baseOffset.y + pan.y}px) scale(${scale})`;
+  const viewportTouchAction = activePattern ? "none" : "pan-y";
 
-  function resolveCell(event: PointerEvent<HTMLCanvasElement>) {
+  function resolveClientPoint(clientX: number, clientY: number) {
     const rect = viewportRef.current?.getBoundingClientRect();
     if (!rect) {
       return { x: -1, y: -1 };
     }
 
-    const localX = (event.clientX - rect.left - baseOffset.x - pan.x) / scale;
-    const localY = (event.clientY - rect.top - baseOffset.y - pan.y) / scale;
+    const localX = (clientX - rect.left - baseOffset.x - pan.x) / scale;
+    const localY = (clientY - rect.top - baseOffset.y - pan.y) / scale;
     const x = Math.floor(localX / metrics.cellSize);
     const y = Math.floor(localY / metrics.cellSize);
     return { x, y };
   }
 
-  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
+  function resolveCell(event: PointerEvent<HTMLElement>) {
+    return resolveClientPoint(event.clientX, event.clientY);
+  }
+
+  function isCellWithinBounds(cell: { x: number; y: number }) {
+    return cell.x >= 0 && cell.y >= 0 && cell.x < metrics.width && cell.y < metrics.height;
+  }
+
+  function beginPendingTouchDraw() {
+    const pendingTouchDraw = pendingTouchDrawRef.current;
+    if (!pendingTouchDraw || pendingTouchDraw.started) {
+      return;
+    }
+
+    pendingTouchDraw.started = true;
+    pointerValueRef.current = pendingTouchDraw.value;
+    isPointerDownRef.current = true;
+    onToggleCell(pendingTouchDraw.startCell.x, pendingTouchDraw.startCell.y);
+  }
+
+  function beginPinchGesture() {
+    const points = Array.from(touchPointsRef.current.values()).slice(0, 2);
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (points.length < 2 || !rect) {
+      return;
+    }
+
+    const [firstPoint, secondPoint] = points;
+    const midpointX = (firstPoint.clientX + secondPoint.clientX) / 2 - rect.left;
+    const midpointY = (firstPoint.clientY + secondPoint.clientY) / 2 - rect.top;
+    const distance = Math.hypot(
+      secondPoint.clientX - firstPoint.clientX,
+      secondPoint.clientY - firstPoint.clientY,
+    );
+
+    if (distance <= 0) {
+      return;
+    }
+
+    pinchStateRef.current = {
+      distance,
+      scale,
+      contentX: (midpointX - baseOffset.x - pan.x) / scale,
+      contentY: (midpointY - baseOffset.y - pan.y) / scale,
+    };
+    pendingTouchDrawRef.current = null;
+    isPointerDownRef.current = false;
+    isPanningRef.current = false;
+  }
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      dropPatternAtClientPoint(clientX: number, clientY: number) {
+        if (!activePattern) {
+          return;
+        }
+
+        const { x, y } = resolveClientPoint(clientX, clientY);
+        onDropPattern?.(activePattern.id, x, y);
+      },
+      centerBoard() {
+        setPan(clampPan(scale, getCenteredPan(scale)));
+      },
+    }),
+    [activePattern, onDropPattern, scale, metrics.canvasHeight, metrics.canvasWidth, viewportSize.height, viewportSize.width],
+  );
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch" && !activePattern && !isSelectionMode) {
+      touchPointsRef.current.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+
+      if (touchPointsRef.current.size >= 2) {
+        beginPinchGesture();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        return;
+      }
+
+      const touchCell = resolveCell(event);
+      if (!isCellWithinBounds(touchCell)) {
+        return;
+      }
+
+      pendingTouchDrawRef.current = {
+        pointerId: event.pointerId,
+        startCell: touchCell,
+        lastCell: touchCell,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        value: grid[touchCell.y][touchCell.x] === 1 ? 0 : 1,
+        started: false,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
+    }
+
     if (isSelectionMode) {
       const { x, y } = resolveCell(event);
       if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
@@ -240,7 +408,15 @@ export function GameCanvas({
 
     if (activePattern) {
       const { x, y } = resolveCell(event);
-      if (x < 0 || y < 0 || x >= metrics.width || y >= metrics.height) {
+      if (event.pointerType === "touch") {
+        isPatternDraggingRef.current = true;
+        touchPatternMovedRef.current = false;
+        touchPatternStartCellRef.current = { x, y };
+        touchPatternStartHoverCellRef.current = hoverCell ? { ...hoverCell } : null;
+        if (!touchPatternPreviewArmedRef.current || hoverCell === null) {
+          setHoverCell({ x, y });
+        }
+        event.currentTarget.setPointerCapture(event.pointerId);
         return;
       }
 
@@ -265,9 +441,114 @@ export function GameCanvas({
     onToggleCell(x, y);
   }
 
-  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
-    const nextCell = resolveCell(event);
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch" && touchPointsRef.current.has(event.pointerId)) {
+      touchPointsRef.current.set(event.pointerId, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+    }
+
+    if (pinchStateRef.current) {
+      const points = Array.from(touchPointsRef.current.values()).slice(0, 2);
+      const rect = viewportRef.current?.getBoundingClientRect();
+
+      if (points.length >= 2 && rect) {
+        const [firstPoint, secondPoint] = points;
+        const midpointX = (firstPoint.clientX + secondPoint.clientX) / 2 - rect.left;
+        const midpointY = (firstPoint.clientY + secondPoint.clientY) / 2 - rect.top;
+        const distance = Math.hypot(
+          secondPoint.clientX - firstPoint.clientX,
+          secondPoint.clientY - firstPoint.clientY,
+        );
+
+        if (distance > 0) {
+          const nextScale = Math.min(
+            maxScale,
+            Math.max(MIN_SCALE, pinchStateRef.current.scale * (distance / pinchStateRef.current.distance)),
+          );
+          const nextBaseOffset = getBaseOffset(nextScale);
+
+          setScale(nextScale);
+          setPan(
+            clampPan(nextScale, {
+              x: midpointX - nextBaseOffset.x - pinchStateRef.current.contentX * nextScale,
+              y: midpointY - nextBaseOffset.y - pinchStateRef.current.contentY * nextScale,
+            }),
+          );
+        }
+      }
+
+      if (hoverCell !== null) {
+        setHoverCell(null);
+      }
+      return;
+    }
+
     if (
+      event.pointerType === "touch" &&
+      pendingTouchDrawRef.current &&
+      pendingTouchDrawRef.current.pointerId === event.pointerId
+    ) {
+      const pendingTouchDraw = pendingTouchDrawRef.current;
+      const nextCell = resolveCell(event);
+      const movementDistance = Math.hypot(
+        event.clientX - pendingTouchDraw.startClientX,
+        event.clientY - pendingTouchDraw.startClientY,
+      );
+
+      if (
+        isCellWithinBounds(nextCell) &&
+        (movementDistance >= TOUCH_DRAW_ACTIVATION_DISTANCE ||
+          nextCell.x !== pendingTouchDraw.startCell.x ||
+          nextCell.y !== pendingTouchDraw.startCell.y)
+      ) {
+        beginPendingTouchDraw();
+      }
+
+      if (!pendingTouchDraw.started) {
+        return;
+      }
+
+      if (
+        isCellWithinBounds(nextCell) &&
+        (nextCell.x !== pendingTouchDraw.lastCell.x || nextCell.y !== pendingTouchDraw.lastCell.y)
+      ) {
+        onPaintCell(nextCell.x, nextCell.y, pointerValueRef.current);
+        pendingTouchDraw.lastCell = nextCell;
+      }
+      return;
+    }
+
+    const nextCell = resolveCell(event);
+    if (activePattern) {
+      if (
+        isPatternDraggingRef.current &&
+        touchPatternStartCellRef.current &&
+        (nextCell.x !== touchPatternStartCellRef.current.x ||
+          nextCell.y !== touchPatternStartCellRef.current.y)
+      ) {
+        touchPatternMovedRef.current = true;
+      }
+
+      if (
+        event.pointerType === "touch" &&
+        isPatternDraggingRef.current &&
+        touchPatternStartCellRef.current &&
+        touchPatternPreviewArmedRef.current &&
+        touchPatternStartHoverCellRef.current
+      ) {
+        const deltaX = nextCell.x - touchPatternStartCellRef.current.x;
+        const deltaY = nextCell.y - touchPatternStartCellRef.current.y;
+
+        setHoverCell({
+          x: touchPatternStartHoverCellRef.current.x + deltaX,
+          y: touchPatternStartHoverCellRef.current.y + deltaY,
+        });
+      } else {
+        setHoverCell(nextCell);
+      }
+    } else if (
       nextCell.x >= 0 &&
       nextCell.y >= 0 &&
       nextCell.x < metrics.width &&
@@ -287,6 +568,10 @@ export function GameCanvas({
       ) {
         setSelectionEnd(nextCell);
       }
+      return;
+    }
+
+    if (activePattern && isPatternDraggingRef.current) {
       return;
     }
 
@@ -311,7 +596,75 @@ export function GameCanvas({
     onPaintCell(x, y, pointerValueRef.current);
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      touchPointsRef.current.delete(event.pointerId);
+
+      if (pinchStateRef.current) {
+        if (touchPointsRef.current.size < 2) {
+          pinchStateRef.current = null;
+        }
+
+        isPointerDownRef.current = false;
+        isPanningRef.current = false;
+        return;
+      }
+
+      if (
+        pendingTouchDrawRef.current &&
+        pendingTouchDrawRef.current.pointerId === event.pointerId
+      ) {
+        if (!pendingTouchDrawRef.current.started) {
+          onToggleCell(
+            pendingTouchDrawRef.current.startCell.x,
+            pendingTouchDrawRef.current.startCell.y,
+          );
+        }
+
+        pendingTouchDrawRef.current = null;
+        isPointerDownRef.current = false;
+        isPanningRef.current = false;
+        return;
+      }
+    }
+
+    if (activePattern && isPatternDraggingRef.current) {
+      const { x, y } = resolveCell(event);
+      if (event.pointerType === "touch") {
+        const nextHoverCell = hoverCell ?? { x, y };
+
+        if (touchPatternMovedRef.current || !touchPatternPreviewArmedRef.current) {
+          if (!touchPatternPreviewArmedRef.current || hoverCell === null) {
+            setHoverCell({ x, y });
+          }
+          touchPatternPreviewArmedRef.current = true;
+          isPatternDraggingRef.current = false;
+          touchPatternMovedRef.current = false;
+          touchPatternStartCellRef.current = null;
+          touchPatternStartHoverCellRef.current = null;
+          return;
+        }
+
+        onDropPattern?.(activePattern.id, nextHoverCell.x, nextHoverCell.y);
+        touchPatternPreviewArmedRef.current = false;
+        isPatternDraggingRef.current = false;
+        touchPatternMovedRef.current = false;
+        touchPatternStartCellRef.current = null;
+        touchPatternStartHoverCellRef.current = null;
+        setHoverCell(null);
+        return;
+      }
+
+      onDropPattern?.(activePattern.id, x, y);
+      touchPatternPreviewArmedRef.current = false;
+      isPatternDraggingRef.current = false;
+      touchPatternMovedRef.current = false;
+      touchPatternStartCellRef.current = null;
+      touchPatternStartHoverCellRef.current = null;
+      setHoverCell(null);
+      return;
+    }
+
     if (isSelectionMode && selectionStart && selectionEnd) {
       onSelectionComplete?.({
         startX: selectionStart.x,
@@ -325,6 +678,11 @@ export function GameCanvas({
 
     isPointerDownRef.current = false;
     isPanningRef.current = false;
+    isPatternDraggingRef.current = false;
+    pendingTouchDrawRef.current = null;
+    touchPatternMovedRef.current = false;
+    touchPatternStartCellRef.current = null;
+    touchPatternStartHoverCellRef.current = null;
   }
 
   function handleWheel(event: WheelEvent<HTMLDivElement>) {
@@ -336,7 +694,7 @@ export function GameCanvas({
     }
 
     const zoomFactor = event.deltaY < 0 ? 1.12 : 0.9;
-    const nextScale = Math.min(4, Math.max(0.5, scale * zoomFactor));
+    const nextScale = Math.min(maxScale, Math.max(MIN_SCALE, scale * zoomFactor));
 
     if (nextScale === scale) {
       return;
@@ -359,20 +717,27 @@ export function GameCanvas({
   }
 
   return (
-    <div ref={viewportRef} onWheel={handleWheel} className="relative h-full w-full overflow-hidden rounded-[28px]">
+    <div
+      ref={viewportRef}
+      onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onContextMenu={(event) => event.preventDefault()}
+      className="relative h-full w-full overflow-hidden rounded-[4px] sm:rounded-[6px]"
+      style={{ touchAction: viewportTouchAction }}
+    >
       <canvas
         ref={canvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onContextMenu={(event) => event.preventDefault()}
         style={{
           transform,
           transformOrigin: "top left",
+          touchAction: "none",
         }}
-        className="glow-pulse absolute left-0 top-0 rounded-[28px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
+        className="glow-pulse absolute left-0 top-0 rounded-[4px] sm:rounded-[6px] bg-[#0d0d0d] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
       />
     </div>
   );
-}
+});
