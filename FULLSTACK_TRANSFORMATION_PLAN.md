@@ -252,6 +252,100 @@ Define explicit envs:
 
 ---
 
+## 8.1 Frontend State-Change Inventory (Current Code) and Backend Ownership
+
+The frontend now persists core simulation state through Zustand + `localStorage` and mutates it through the actions below. In the full-stack target, all **durable/domain state** must be server-owned and synced through backend APIs.
+
+| Frontend state/action today | Current behavior | Move to backend? | Backend contract to add |
+|---|---|---|---|
+| `createWorld({name,width,height})` | Creates world object + empty grid + timestamps + generation | Yes | `POST /worlds` |
+| `updateGrid(worldId, grid)` | Replaces whole grid when user toggles/paints cells | Yes | `PATCH /worlds/:id/grid` (or cell-diff endpoint) |
+| `stepWorld(worldId)` | Computes next generation client-side and increments generation | Yes (authoritative) | `POST /worlds/:id/step` |
+| `randomizeWorld(worldId)` | Generates randomized board client-side | Yes | `POST /worlds/:id/randomize` |
+| `clearWorld(worldId)` | Resets board and generation | Yes | `POST /worlds/:id/clear` |
+| `insertPatternIntoWorld(worldId, patternId, x, y)` | Applies built-in/custom pattern to grid | Yes | `POST /worlds/:id/pattern-applications` |
+| `addCustomPattern(pattern)` | Saves user-defined pattern in persisted store | Yes | `POST /patterns` |
+| `deleteCustomPattern(patternId)` | Removes saved custom pattern | Yes | `DELETE /patterns/:id` |
+| `speed` + `setSpeed()` | Persists simulation speed preference | Yes (as user pref) | `PUT /me/preferences` |
+| `currentWorldId` + `selectWorld()` | Persists last selected world | Yes (as user pref) | `PUT /me/preferences` |
+| `isRunning` + `setRunning()` | Runtime play/pause UI state | No (client session state) | N/A |
+| Pattern modal draft (`pendingPatternSelection`, name/description input) | Unsaved draft in modal | No (until saved) | N/A |
+| Canvas pan/zoom/hover/selection transient state | Pure interaction/UI state | No | N/A |
+
+### 8.2 Missing Backend Flows Required by New Frontend Behavior
+
+Because the app evolved after the first draft, the backend plan must explicitly cover these behaviors:
+
+1. **High-frequency grid editing** (drag paint + toggle) without replacing full grid each pointer event.
+   - Add a **cell-diff/batch patch** API (e.g., `PATCH /worlds/:id/cells`) and debounce/merge strategy on frontend.
+2. **Simulation authority choice**.
+   - Choose one model and document it: server-authoritative stepping vs. client speculative stepping with server reconciliation.
+3. **Pattern capture-and-save flow**.
+   - Support creating custom pattern from selected cells with metadata (`name`, `description`, `width`, `height`, `cells`).
+4. **World registry freshness**.
+   - Ensure `updatedAt` and `generation` are returned by list API so Worlds screen remains accurate.
+5. **Preferences sync**.
+   - Persist per-user `speed` and `last_opened_world_id` in backend profile/preferences table.
+6. **Ownership and sharing model**.
+   - At minimum, private-by-default ownership rules for worlds/patterns; sharing can be phase 2.
+
+### 8.3 API Additions to Cover All Durable Frontend Mutations
+
+Add/confirm endpoints so every durable frontend state change has a backend equivalent:
+
+- `POST /worlds`
+- `GET /worlds`
+- `GET /worlds/:id`
+- `PATCH /worlds/:id` (name/metadata)
+- `PATCH /worlds/:id/grid` **or** `PATCH /worlds/:id/cells` (recommended for paint performance)
+- `POST /worlds/:id/step`
+- `POST /worlds/:id/randomize`
+- `POST /worlds/:id/clear`
+- `POST /worlds/:id/pattern-applications`
+- `GET /patterns?scope=mine|builtin`
+- `POST /patterns`
+- `DELETE /patterns/:id`
+- `GET /me/preferences`
+- `PUT /me/preferences`
+
+### 8.4 Data Model Updates Needed for Current Feature Set
+
+In addition to existing proposed tables, include:
+
+- `user_preferences`:
+  - `user_id (pk/fk)`
+  - `simulation_speed` (int)
+  - `last_opened_world_id` (nullable fk)
+  - `updated_at`
+- `patterns` scope/ownership fields:
+  - `owner_user_id` (nullable for built-ins)
+  - `is_builtin` (boolean)
+- `worlds` integrity fields:
+  - `generation`
+  - `updated_at` (server-managed)
+  - optional `version` column for optimistic concurrency on rapid edits
+
+### 8.5 Frontend Migration Rules (So Nothing Is Missed)
+
+1. Replace Zustand persistence (`localStorage`) for `worlds`, `customPatterns`, `speed`, and `currentWorldId` with backend-backed caches.
+2. Keep only ephemeral UI state in React/Zustand (`isRunning`, picker/modals, canvas pan/zoom/selection).
+3. Introduce an offline/error strategy:
+   - optimistic UI for edits,
+   - retry queue for transient failures,
+   - reconcile on next successful fetch.
+4. Update UI copy that currently says data is stored locally.
+
+### 8.6 Audit Scope (Where These Mutations Were Found)
+
+Use this as a living checklist while implementing backend migration:
+
+- `frontend/src/store/gameStore.ts`: all persistent domain mutations (`createWorld`, `updateGrid`, `stepWorld`, `randomizeWorld`, `clearWorld`, pattern CRUD, preferences).
+- `frontend/src/screens/GameScreen.tsx`: UI triggers that call mutation actions (paint/toggle/step/play/randomize/clear/pattern insert/save/delete/speed).
+- `frontend/src/screens/WorldsScreen.tsx`: world creation/open flow and current local-persistence messaging.
+- `frontend/src/features/game/presets.ts`: custom pattern shape and capture semantics to preserve in backend DTOs.
+
+---
+
 ## 9) Quality, Testing, and CI/CD
 
 ## 9.1 Testing Strategy
