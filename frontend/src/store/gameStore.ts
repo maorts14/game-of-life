@@ -1,4 +1,8 @@
 import { useMemo } from "react";
+import {
+  DEFAULT_SIMULATION_SPEED,
+  DEFAULT_WORLD_NAME,
+} from "@game-of-life/shared-game";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
@@ -12,8 +16,6 @@ import {
 import { insertPatternAt } from "../features/game/presets";
 import type { PatternDefinition } from "../features/game/presets";
 import type { Grid, World, WorldSummary } from "../features/game/types";
-
-const DEFAULT_WORLD_NAME = "Void Core";
 
 function createId() {
   const cryptoObject = globalThis.crypto;
@@ -50,6 +52,7 @@ interface GameState {
   deleteWorld: (worldId: string) => void;
   selectWorld: (worldId: string) => void;
   updateGrid: (worldId: string, grid: Grid) => void;
+  updateGridWith: (worldId: string, updater: (grid: Grid) => Grid) => void;
   stepWorld: (worldId: string) => void;
   randomizeWorld: (worldId: string) => void;
   clearWorld: (worldId: string) => void;
@@ -98,7 +101,7 @@ export const useGameStore = create<GameState>()(
       customPatterns: [],
       currentWorldId: null,
       isRunning: false,
-      speed: 8,
+      speed: DEFAULT_SIMULATION_SPEED,
       createWorld: ({ name, width, height }) => {
         const world = createWorldRecord(name, width, height);
 
@@ -136,6 +139,14 @@ export const useGameStore = create<GameState>()(
           worlds: withUpdatedWorld(state.worlds, worldId, (world) => ({
             ...world,
             grid,
+            updatedAt: new Date().toISOString(),
+          })),
+        })),
+      updateGridWith: (worldId, updater) =>
+        set((state) => ({
+          worlds: withUpdatedWorld(state.worlds, worldId, (world) => ({
+            ...world,
+            grid: updater(world.grid),
             updatedAt: new Date().toISOString(),
           })),
         })),

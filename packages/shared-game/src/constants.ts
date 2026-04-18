@@ -1,0 +1,10 @@
+export const DEFAULT_WORLD_NAME = "Void Core";
+export const DEFAULT_WORLD_WIDTH = 48;
+export const DEFAULT_WORLD_HEIGHT = 32;
+export const MIN_WORLD_WIDTH = 12;
+export const MAX_WORLD_WIDTH = 120;
+export const MIN_WORLD_HEIGHT = 12;
+export const MAX_WORLD_HEIGHT = 80;
+export const DEFAULT_SIMULATION_SPEED = 8;
+export const MIN_SIMULATION_SPEED = 1;
+export const MAX_SIMULATION_SPEED = 20;

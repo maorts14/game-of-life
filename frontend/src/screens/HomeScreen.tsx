@@ -1,4 +1,4 @@
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Cloud, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { BackgroundLifeCanvas } from "../components/BackgroundLifeCanvas";
 
@@ -18,7 +18,7 @@ export function HomeScreen() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
             A dark-field simulator for exploring how order, collapse, and emergence unfold one
-            generation at a time.
+            generation at a time, with separate Local and Cloud world libraries.
           </p>
 
           <div className="mt-12 flex flex-wrap gap-4">
@@ -31,13 +31,17 @@ export function HomeScreen() {
               <ArrowRight size={18} />
               Play
             </Link>
+            <Link to="/login" className="control-button">
+              <Cloud size={18} />
+              Cloud Sign In
+            </Link>
             <Link to="/about" className="control-button">
               <Info size={18} />
               About
             </Link>
           </div>
 
-          <div className="mt-16 grid max-w-2xl grid-cols-3 gap-6 text-sm text-slate-400">
+          <div className="mt-16 grid max-w-3xl gap-6 text-sm text-slate-400 sm:grid-cols-3">
             <div>
               <p className="font-display text-3xl text-white">1</p>
               <p className="mt-2 uppercase tracking-[0.3em]">Living system</p>
@@ -45,6 +49,10 @@ export function HomeScreen() {
             <div>
               <p className="font-display text-3xl text-white">∞</p>
               <p className="mt-2 uppercase tracking-[0.3em]">Emergent outcomes</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl text-white">2</p>
+              <p className="mt-2 uppercase tracking-[0.3em]">Local and cloud vaults</p>
             </div>
           </div>
         </div>

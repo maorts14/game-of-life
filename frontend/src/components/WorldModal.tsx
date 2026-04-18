@@ -1,4 +1,12 @@
 import { FormEvent, useState } from "react";
+import {
+  DEFAULT_WORLD_HEIGHT,
+  DEFAULT_WORLD_WIDTH,
+  MAX_WORLD_HEIGHT,
+  MAX_WORLD_WIDTH,
+  MIN_WORLD_HEIGHT,
+  MIN_WORLD_WIDTH,
+} from "@game-of-life/shared-game";
 import { clamp } from "../utils/formatters";
 
 interface WorldModalProps {
@@ -9,8 +17,8 @@ interface WorldModalProps {
 
 export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
   const [name, setName] = useState("");
-  const [width, setWidth] = useState(48);
-  const [height, setHeight] = useState(32);
+  const [width, setWidth] = useState(DEFAULT_WORLD_WIDTH);
+  const [height, setHeight] = useState(DEFAULT_WORLD_HEIGHT);
 
   if (!isOpen) {
     return null;
@@ -18,8 +26,8 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
 
   function resetForm() {
     setName("");
-    setWidth(48);
-    setHeight(32);
+    setWidth(DEFAULT_WORLD_WIDTH);
+    setHeight(DEFAULT_WORLD_HEIGHT);
   }
 
   function handleClose() {
@@ -30,8 +38,16 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
   function handleCreate() {
     onCreate({
       name,
-      width: clamp(Number.isFinite(width) ? width : 48, 12, 120),
-      height: clamp(Number.isFinite(height) ? height : 32, 12, 80),
+      width: clamp(
+        Number.isFinite(width) ? width : DEFAULT_WORLD_WIDTH,
+        MIN_WORLD_WIDTH,
+        MAX_WORLD_WIDTH,
+      ),
+      height: clamp(
+        Number.isFinite(height) ? height : DEFAULT_WORLD_HEIGHT,
+        MIN_WORLD_HEIGHT,
+        MAX_WORLD_HEIGHT,
+      ),
     });
     resetForm();
   }
@@ -81,8 +97,8 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
                 value={width}
                 onChange={(event) => setWidth(Number(event.target.value))}
                 type="number"
-                min={12}
-                max={120}
+                min={MIN_WORLD_WIDTH}
+                max={MAX_WORLD_WIDTH}
                 className="w-full border-b border-cyan-300/40 bg-transparent px-0 py-3 text-lg text-white outline-none"
               />
             </label>
@@ -95,8 +111,8 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
                 value={height}
                 onChange={(event) => setHeight(Number(event.target.value))}
                 type="number"
-                min={12}
-                max={80}
+                min={MIN_WORLD_HEIGHT}
+                max={MAX_WORLD_HEIGHT}
                 className="w-full border-b border-cyan-300/40 bg-transparent px-0 py-3 text-lg text-white outline-none"
               />
             </label>

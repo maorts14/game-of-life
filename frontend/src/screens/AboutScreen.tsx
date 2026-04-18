@@ -50,10 +50,10 @@ export function AboutScreen() {
           <section className="mt-10">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">The Rules</p>
             <div className="mt-4 space-y-1 text-lg leading-8 text-slate-200">
-              <p>Each cell checks its 8 surrounding neighbors and updates its state by the amount of living cells around him.</p>
-              <p>- Less than 2 live: dies from underpopulation.</p>
+              <p>Each cell checks its 8 surrounding neighbors and updates its state by the number of living cells around it.</p>
+              <p>- Less than 2 live neighbors: dies from underpopulation.</p>
               <p>- 2 or 3 live neighbors: survives into the next generation.</p>
-              <p>- More than 3 live neighbors dies from overpopulation.</p>
+              <p>- More than 3 live neighbors: dies from overpopulation.</p>
               <p>- Any dead cell with exactly 3 live neighbors becomes alive through reproduction.</p>
             </div>
           </section>
@@ -62,7 +62,8 @@ export function AboutScreen() {
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">The Engine</p>
             <p className="mt-4 text-lg leading-8 text-slate-200">
               This app lets you create worlds, paint cells or add patterns directly on the simulation canvas, randomize the board, step
-              one generation at a time and run continuous playback.
+              one generation at a time, and run continuous playback. You can keep device-only Local worlds or sign in for a separate
+              Cloud library with synced worlds, custom patterns, and playback preferences.
             </p>
           </section>
 
