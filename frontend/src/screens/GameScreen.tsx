@@ -16,30 +16,30 @@ import {
   X,
 } from "lucide-react";
 import { Navigate, useParams } from "react-router-dom";
-import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
+import { useAuth } from "../auth/AuthProvider";
 import { GameCanvas } from "../components/GameCanvas";
 import type { GameCanvasHandle } from "../components/GameCanvas";
 import { PatternSaveModal } from "../components/PatternSaveModal";
 import { ResponsiveIconButton } from "../components/ResponsiveIconButton";
-import { paintCell, useGameStore, usePatterns, usePopulation, useSelectedWorld } from "../store/gameStore";
+import { StorageBadge } from "../components/StorageBadge";
+import { BUILTIN_PATTERNS, createPatternFromSelection } from "../features/game/presets";
+import { parseWorldRef } from "../shared/worldRoutes";
+import {
+  paintCell,
+  useGameStore,
+  usePatterns,
+  usePopulation,
+  useSelectedWorld,
+  useSimulationSpeed,
+} from "../store/gameStore";
 
 export function GameScreen() {
-  const { worldId } = useParams();
-  const world = useSelectedWorld(worldId);
-  const customPatterns = usePatterns();
-  const population = usePopulation(worldId);
-  const [isPatternPickerOpen, setIsPatternPickerOpen] = useState(false);
-  const [hoveredInfoPatternId, setHoveredInfoPatternId] = useState<string | null>(null);
-  const [activePatternId, setActivePatternId] = useState<string | null>(null);
-  const [isPatternCaptureMode, setIsPatternCaptureMode] = useState(false);
-  const [mobileControlPanel, setMobileControlPanel] = useState<"speed" | "actions" | "patterns" | null>(null);
-  const [pendingPatternCellCount, setPendingPatternCellCount] = useState(0);
-  const [pendingPatternSelection, setPendingPatternSelection] = useState<ReturnType<
-    typeof createPatternFromSelection
-  > | null>(null);
-  const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
+  const { session } = useAuth();
+  const { storageMode: storageModeParam, worldId } = useParams();
+  const worldRef = parseWorldRef(storageModeParam, worldId);
+  const world = useSelectedWorld(worldRef);
+  const ensureCloudWorld = useGameStore((state) => state.ensureCloudWorld);
   const isRunning = useGameStore((state) => state.isRunning);
-  const speed = useGameStore((state) => state.speed);
   const updateGrid = useGameStore((state) => state.updateGrid);
   const stepWorld = useGameStore((state) => state.stepWorld);
   const randomizeWorld = useGameStore((state) => state.randomizeWorld);
@@ -49,21 +49,55 @@ export function GameScreen() {
   const insertPatternIntoWorld = useGameStore((state) => state.insertPatternIntoWorld);
   const addCustomPattern = useGameStore((state) => state.addCustomPattern);
   const deleteCustomPattern = useGameStore((state) => state.deleteCustomPattern);
+  const lastError = useGameStore((state) => state.lastError);
+  const clearLastError = useGameStore((state) => state.clearLastError);
+  const customPatterns = usePatterns(worldRef?.storageMode ?? "local");
+  const population = usePopulation(worldRef);
+  const speed = useSimulationSpeed(worldRef?.storageMode ?? "local");
+  const [isPatternPickerOpen, setIsPatternPickerOpen] = useState(false);
+  const [hoveredInfoPatternId, setHoveredInfoPatternId] = useState<string | null>(null);
+  const [activePatternId, setActivePatternId] = useState<string | null>(null);
+  const [isPatternCaptureMode, setIsPatternCaptureMode] = useState(false);
+  const [mobileControlPanel, setMobileControlPanel] = useState<"speed" | "actions" | "patterns" | null>(null);
+  const [pendingPatternSelection, setPendingPatternSelection] = useState<ReturnType<
+    typeof createPatternFromSelection
+  > | null>(null);
+  const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
+  const isCloudStepInFlightRef = useRef(false);
+  const accessToken = session?.access_token ?? null;
+
+  useEffect(() => {
+    if (worldRef?.storageMode === "cloud" && accessToken && worldId) {
+      void ensureCloudWorld(accessToken, worldId);
+    }
+  }, [accessToken, ensureCloudWorld, worldId, worldRef?.storageMode]);
 
   const patterns = [...BUILTIN_PATTERNS, ...customPatterns];
   const customPatternIds = new Set(customPatterns.map((pattern) => pattern.id));
 
   useEffect(() => {
-    if (!worldId || !isRunning) {
+    if (!worldRef || !isRunning) {
       return undefined;
     }
 
     const interval = window.setInterval(() => {
-      stepWorld(worldId);
+      if (worldRef.storageMode === "cloud") {
+        if (isCloudStepInFlightRef.current) {
+          return;
+        }
+
+        isCloudStepInFlightRef.current = true;
+        void stepWorld(worldRef, accessToken).finally(() => {
+          isCloudStepInFlightRef.current = false;
+        });
+        return;
+      }
+
+      void stepWorld(worldRef, accessToken);
     }, Math.max(50, 900 / speed));
 
     return () => window.clearInterval(interval);
-  }, [isRunning, speed, stepWorld, worldId]);
+  }, [accessToken, isRunning, speed, stepWorld, worldRef]);
 
   useEffect(() => () => setRunning(false), [setRunning]);
 
@@ -73,7 +107,7 @@ export function GameScreen() {
     }
 
     function handleDesktopPatternPlacement(event: PointerEvent) {
-      if (event.pointerType === "touch" || event.button !== 0) {
+      if (event.pointerType === "touch" || event.button !== 0 || !worldRef) {
         return;
       }
 
@@ -99,13 +133,29 @@ export function GameScreen() {
     return () => {
       document.removeEventListener("pointerdown", handleDesktopPatternPlacement);
     };
-  }, [activePatternId]);
+  }, [activePatternId, worldRef]);
 
-  if (!worldId || !world) {
+  if (!worldRef) {
     return <Navigate to="/worlds" replace />;
   }
 
-  const density = ((population / (world.width * world.height || 1)) * 100).toFixed(1);
+  if (worldRef.storageMode === "cloud" && !accessToken) {
+    return <Navigate to="/worlds" replace />;
+  }
+
+  if (!world) {
+    return (
+      <main className="page-fade flex h-[var(--app-stable-vh)] items-center justify-center px-6">
+        <div className="panel ghost-border rounded-[28px] px-8 py-8 text-center">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Loading World</p>
+          <h1 className="font-display mt-3 text-3xl text-white">Restoring simulation</h1>
+        </div>
+      </main>
+    );
+  }
+
+  const activeWorld = world;
+  const density = ((population / (activeWorld.width * activeWorld.height || 1)) * 100).toFixed(1);
 
   function handleSelectionComplete(selection: {
     startX: number;
@@ -113,30 +163,13 @@ export function GameScreen() {
     endX: number;
     endY: number;
   }) {
-    if (!world) {
-      return;
-    }
-
-    const minX = Math.min(selection.startX, selection.endX);
-    const maxX = Math.max(selection.startX, selection.endX);
-    const minY = Math.min(selection.startY, selection.endY);
-    const maxY = Math.max(selection.startY, selection.endY);
-    let liveCount = 0;
-
-    for (let y = minY; y <= maxY; y += 1) {
-      for (let x = minX; x <= maxX; x += 1) {
-        liveCount += world.grid[y]?.[x] ?? 0;
-      }
-    }
-
-    const created = createPatternFromSelection(world.grid, selection, "__pending__", "__pending__");
+    const created = createPatternFromSelection(activeWorld.grid, selection, "__pending__", "__pending__");
     setIsPatternCaptureMode(false);
 
     if (!created) {
       return;
     }
 
-    setPendingPatternCellCount(liveCount);
     setPendingPatternSelection(created);
   }
 
@@ -154,29 +187,32 @@ export function GameScreen() {
       <PatternSaveModal
         isOpen={pendingPatternSelection !== null}
         patternPreview={pendingPatternSelection}
+        storageLabel={worldRef.storageMode === "cloud" ? "Cloud" : "Local"}
         onClose={() => {
           setPendingPatternSelection(null);
-          setPendingPatternCellCount(0);
         }}
         onSave={({ name, description }) => {
           if (!pendingPatternSelection) {
             return;
           }
 
-          addCustomPattern({
-            ...pendingPatternSelection,
-            name,
-            description,
-          });
+          void addCustomPattern(
+            worldRef.storageMode,
+            {
+              ...pendingPatternSelection,
+              name,
+              description,
+            },
+            accessToken,
+          );
           setPendingPatternSelection(null);
-          setPendingPatternCellCount(0);
           setIsPatternPickerOpen(true);
         }}
       />
       <div className="flex h-full min-h-0 flex-col rounded-[24px] bg-black/18 px-2 py-1 sm:min-h-[calc(var(--app-stable-vh)-1.5rem)] sm:py-2 xl:h-full xl:min-h-0 xl:rounded-[28px] xl:px-3 xl:py-3">
         <header className="panel ghost-border grid grid-cols-[46px_minmax(0,1fr)] items-stretch gap-2.5 rounded-[20px] px-3 py-2 sm:hidden">
           <ResponsiveIconButton
-            to="/"
+            to="/worlds"
             icon={<ArrowLeft size={18} />}
             mobileLabel="Exit"
             desktopLabel="Save and Exit"
@@ -184,24 +220,23 @@ export function GameScreen() {
           />
 
           <div className="flex min-w-0 flex-col justify-center gap-1 px-0.5">
-            <h1 className="font-display truncate text-[1.18rem] leading-none text-white">
-              {world.name}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display truncate text-[1.18rem] leading-none text-white">{activeWorld.name}</h1>
+              <StorageBadge storageMode={worldRef.storageMode} compact />
+            </div>
 
             <div className="flex items-end gap-2">
               <p className="truncate text-[0.85rem] leading-none uppercase tracking-[0.3em] text-slate-500">
                 Generation
               </p>
-              <p className="font-display text-[1.05rem] leading-none text-white">
-                {world.generation}
-              </p>
+              <p className="font-display text-[1.05rem] leading-none text-white">{activeWorld.generation}</p>
             </div>
           </div>
         </header>
 
         <header className="panel ghost-border hidden items-center justify-between gap-3 rounded-[20px] px-3 py-3 sm:flex sm:px-4 xl:rounded-[22px] xl:px-5 xl:py-3">
           <ResponsiveIconButton
-            to="/"
+            to="/worlds"
             icon={<ArrowLeft size={18} />}
             mobileLabel="Exit"
             desktopLabel="Save and Exit"
@@ -210,14 +245,26 @@ export function GameScreen() {
 
           <div className="min-w-0 flex-1 text-center">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">World Name</p>
-            <h1 className="font-display mt-1 truncate text-lg text-white sm:text-xl xl:text-2xl">{world.name}</h1>
+            <div className="mt-2 flex items-center justify-center gap-3">
+              <h1 className="font-display truncate text-lg text-white sm:text-xl xl:text-2xl">{activeWorld.name}</h1>
+              <StorageBadge storageMode={worldRef.storageMode} />
+            </div>
           </div>
 
           <div className="text-right">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Generation</p>
-            <p className="font-display mt-1 text-xl text-white sm:text-2xl xl:text-3xl">{world.generation}</p>
+            <p className="font-display mt-1 text-xl text-white sm:text-2xl xl:text-3xl">{activeWorld.generation}</p>
           </div>
         </header>
+
+        {lastError ? (
+          <div className="panel ghost-border mt-2 flex items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-sm">
+            <span className="text-red-100">{lastError}</span>
+            <button className="text-xs uppercase tracking-[0.22em] text-slate-400" onClick={clearLastError}>
+              Dismiss
+            </button>
+          </div>
+        ) : null}
 
         <section className="grid min-h-0 flex-1 grid-cols-1 gap-1 pt-1 pb-0.5 xl:grid-cols-[180px_minmax(0,1fr)_220px] xl:gap-3 xl:py-3">
           <aside className="panel ghost-border hidden min-h-0 rounded-[24px] p-5 xl:block">
@@ -233,7 +280,7 @@ export function GameScreen() {
               </div>
               <div>
                 <p className="font-display text-3xl text-white">
-                  {world.width}x{world.height}
+                  {activeWorld.width}x{activeWorld.height}
                 </p>
                 <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-500">Grid</p>
               </div>
@@ -252,7 +299,7 @@ export function GameScreen() {
               </div>
               <div className="px-0.5 py-0.5 text-center">
                 <p className="font-display text-base leading-none text-white">
-                  {world.width}x{world.height}
+                  {activeWorld.width}x{activeWorld.height}
                 </p>
                 <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-slate-500">Grid</p>
               </div>
@@ -266,20 +313,20 @@ export function GameScreen() {
                 ref={(instance) => {
                   gameCanvasRef.current = instance;
                 }}
-                grid={world.grid}
+                grid={activeWorld.grid}
                 activePatternId={activePatternId}
                 patterns={customPatterns}
                 isSelectionMode={isPatternCaptureMode}
-                onToggleCell={(x, y) =>
-                  updateGrid(worldId, paintCell(world.grid, x, y, world.grid[y][x] === 1 ? 0 : 1))
-                }
+                onToggleCell={(x, y) => {
+                  void updateGrid(worldRef, paintCell(activeWorld.grid, x, y, activeWorld.grid[y][x] === 1 ? 0 : 1), accessToken);
+                }}
                 onPaintCell={(x, y, value) => {
-                  if (world.grid[y]?.[x] !== value) {
-                    updateGrid(worldId, paintCell(world.grid, x, y, value));
+                  if (activeWorld.grid[y]?.[x] !== value) {
+                    void updateGrid(worldRef, paintCell(activeWorld.grid, x, y, value), accessToken);
                   }
                 }}
                 onDropPattern={(patternId, x, y) => {
-                  insertPatternIntoWorld(worldId, patternId, x, y);
+                  void insertPatternIntoWorld(worldRef, patternId, x, y, accessToken);
                   setActivePatternId(null);
                 }}
                 onSelectionComplete={handleSelectionComplete}
@@ -331,7 +378,7 @@ export function GameScreen() {
                           min={1}
                           max={20}
                           value={speed}
-                          onChange={(event) => setSpeed(Number(event.target.value))}
+                          onChange={(event) => void setSpeed(worldRef.storageMode, Number(event.target.value), accessToken)}
                           className="mt-2 h-1 w-full accent-cyan-300"
                         />
                       </div>
@@ -349,13 +396,13 @@ export function GameScreen() {
                           <ResponsiveIconButton
                             icon={<Shuffle size={16} />}
                             mobileLabel="Randomize"
-                            onClick={() => randomizeWorld(worldId)}
+                            onClick={() => void randomizeWorld(worldRef, accessToken)}
                             className="!min-w-[82px] !px-2 !py-1.5"
                           />
                           <ResponsiveIconButton
                             icon={<Trash2 size={16} />}
                             mobileLabel="Clear"
-                            onClick={() => clearWorld(worldId)}
+                            onClick={() => void clearWorld(worldRef, accessToken)}
                             className="!min-w-[70px] !px-2 !py-1.5"
                           />
                         </div>
@@ -375,17 +422,15 @@ export function GameScreen() {
                         >
                           {isPatternCaptureMode ? <X size={20} /> : <Plus size={20} />}
                         </button>
-                          {patterns.map((pattern) => (
-                            <button
-                              key={`mobile-${pattern.id}`}
-                              className={`flex w-[84px] shrink-0 flex-col items-center justify-start text-center transition ${
-                                activePatternId === pattern.id
-                                  ? "text-cyan-100"
-                                  : "text-white"
-                              }`}
-                              onClick={() => setActivePatternId(pattern.id)}
-                            >
-                              <span
+                        {patterns.map((pattern) => (
+                          <button
+                            key={`mobile-${pattern.id}`}
+                            className={`flex w-[84px] shrink-0 flex-col items-center justify-start text-center transition ${
+                              activePatternId === pattern.id ? "text-cyan-100" : "text-white"
+                            }`}
+                            onClick={() => setActivePatternId(pattern.id)}
+                          >
+                            <span
                               className={`flex h-[50px] w-[84px] items-center justify-center overflow-hidden rounded-[15px] transition ${
                                 activePatternId === pattern.id
                                   ? "bg-cyan-300/18 shadow-[0_0_0_1px_rgba(103,232,249,0.28)]"
@@ -412,7 +457,7 @@ export function GameScreen() {
                     <ResponsiveIconButton
                       icon={<StepForward size={16} />}
                       mobileLabel="Step"
-                      onClick={() => stepWorld(worldId)}
+                      onClick={() => void stepWorld(worldRef, accessToken)}
                       className="min-w-[60px]"
                     />
 
@@ -439,27 +484,21 @@ export function GameScreen() {
                       icon={<Gauge size={16} />}
                       mobileLabel="Speed"
                       active={mobileControlPanel === "speed"}
-                      onClick={() =>
-                        setMobileControlPanel((value) => (value === "speed" ? null : "speed"))
-                      }
+                      onClick={() => setMobileControlPanel((value) => (value === "speed" ? null : "speed"))}
                     />
 
                     <ResponsiveIconButton
                       icon={<Wrench size={16} />}
                       mobileLabel="Actions"
                       active={mobileControlPanel === "actions"}
-                      onClick={() =>
-                        setMobileControlPanel((value) => (value === "actions" ? null : "actions"))
-                      }
+                      onClick={() => setMobileControlPanel((value) => (value === "actions" ? null : "actions"))}
                     />
 
                     <ResponsiveIconButton
                       icon={<Shapes size={16} />}
                       mobileLabel="Patterns"
                       active={mobileControlPanel === "patterns"}
-                      onClick={() =>
-                        setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))
-                      }
+                      onClick={() => setMobileControlPanel((value) => (value === "patterns" ? null : "patterns"))}
                     />
                   </div>
                 </div>
@@ -501,12 +540,7 @@ export function GameScreen() {
                     return (
                       <div key={pattern.id} className="rounded-[18px] bg-white/[0.03] p-3">
                         <div className="flex items-center justify-between gap-3">
-                          <button
-                            className="min-w-0 flex-1 text-left"
-                            onClick={() => {
-                              setActivePatternId(pattern.id);
-                            }}
-                          >
+                          <button className="min-w-0 flex-1 text-left" onClick={() => setActivePatternId(pattern.id)}>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-display text-base text-white">{pattern.name}</span>
@@ -536,7 +570,7 @@ export function GameScreen() {
                                   if (activePatternId === pattern.id) {
                                     setActivePatternId(null);
                                   }
-                                  deleteCustomPattern(pattern.id);
+                                  void deleteCustomPattern(worldRef.storageMode, pattern.id, accessToken);
                                 }}
                                 aria-label={`Delete ${pattern.name}`}
                               >
@@ -558,18 +592,15 @@ export function GameScreen() {
                     );
                   })
                 : null}
-              <button className="control-button justify-center py-3" onClick={() => randomizeWorld(worldId)}>
+              <button className="control-button justify-center py-3" onClick={() => void randomizeWorld(worldRef, accessToken)}>
                 <Shuffle size={18} />
                 Randomize
               </button>
-              <button
-                className="control-button justify-center py-3"
-                onClick={() => gameCanvasRef.current?.centerBoard()}
-              >
+              <button className="control-button justify-center py-3" onClick={() => gameCanvasRef.current?.centerBoard()}>
                 <LocateFixed size={18} />
                 Center
               </button>
-              <button className="control-button justify-center py-3" onClick={() => clearWorld(worldId)}>
+              <button className="control-button justify-center py-3" onClick={() => void clearWorld(worldRef, accessToken)}>
                 <Trash2 size={18} />
                 Clear
               </button>
@@ -578,7 +609,7 @@ export function GameScreen() {
             <div className="flex min-h-0 flex-1 flex-col pt-6">
               <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Simulation</p>
               <div className="mt-4 flex flex-col gap-3">
-                <button className="control-button justify-center py-3" onClick={() => stepWorld(worldId)}>
+                <button className="control-button justify-center py-3" onClick={() => void stepWorld(worldRef, accessToken)}>
                   <StepForward size={18} />
                   Step
                 </button>
@@ -589,11 +620,7 @@ export function GameScreen() {
                     Pause
                   </button>
                 ) : (
-                  <button
-                    className="control-button justify-center py-3"
-                    data-accent="true"
-                    onClick={() => setRunning(true)}
-                  >
+                  <button className="control-button justify-center py-3" data-accent="true" onClick={() => setRunning(true)}>
                     <Play size={18} />
                     Play
                   </button>
@@ -610,14 +637,14 @@ export function GameScreen() {
                   min={1}
                   max={20}
                   value={speed}
-                  onChange={(event) => setSpeed(Number(event.target.value))}
+                  onChange={(event) => void setSpeed(worldRef.storageMode, Number(event.target.value), accessToken)}
                   className="mt-4 h-1 w-full accent-cyan-300"
                 />
               </div>
 
               <div className="mt-auto pt-6">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500">
-                Wheel to zoom. Right-click or middle-drag to pan.
+                  Wheel to zoom. Right-click or middle-drag to pan.
                 </p>
               </div>
             </div>

@@ -1,16 +1,24 @@
 import { FormEvent, useState } from "react";
+import type { StorageMode } from "../features/game/types";
 import { clamp } from "../utils/formatters";
 
 interface WorldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (params: { name: string; width: number; height: number }) => void;
+  allowCloudStorage: boolean;
+  onCreate: (params: {
+    name: string;
+    width: number;
+    height: number;
+    storageMode: StorageMode;
+  }) => void | Promise<void>;
 }
 
-export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
+export function WorldModal({ isOpen, onClose, onCreate, allowCloudStorage }: WorldModalProps) {
   const [name, setName] = useState("");
   const [width, setWidth] = useState(48);
   const [height, setHeight] = useState(32);
+  const [storageMode, setStorageMode] = useState<StorageMode>("local");
 
   if (!isOpen) {
     return null;
@@ -20,6 +28,7 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
     setName("");
     setWidth(48);
     setHeight(32);
+    setStorageMode("local");
   }
 
   function handleClose() {
@@ -32,6 +41,7 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
       name,
       width: clamp(Number.isFinite(width) ? width : 48, 12, 120),
       height: clamp(Number.isFinite(height) ? height : 32, 12, 80),
+      storageMode: allowCloudStorage ? storageMode : "local",
     });
     resetForm();
   }
@@ -56,7 +66,7 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
         </p>
         <h2 className="font-display text-4xl text-white">Build a new world</h2>
         <p className="mt-3 max-w-lg text-sm leading-6 text-slate-400">
-          Define the arena, name the experiment, and initialize a fresh cellular field.
+          Define the arena, name the experiment, and choose whether it stays on this device or syncs to the cloud.
         </p>
 
         <div className="mt-8 space-y-6">
@@ -101,6 +111,44 @@ export function WorldModal({ isOpen, onClose, onCreate }: WorldModalProps) {
               />
             </label>
           </div>
+
+          {allowCloudStorage ? (
+            <div>
+              <span className="mb-3 block text-sm uppercase tracking-[0.2em] text-slate-400">
+                Storage Mode
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  className={`rounded-[18px] border px-4 py-4 text-left transition ${
+                    storageMode === "local"
+                      ? "border-amber-300/40 bg-amber-300/10 text-amber-100"
+                      : "border-white/8 bg-black/20 text-slate-300"
+                  }`}
+                  onClick={() => setStorageMode("local")}
+                >
+                  <span className="font-display block text-lg">Local</span>
+                  <span className="mt-1 block text-sm text-inherit/80">
+                    Fast guest-friendly save on this device only.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-[18px] border px-4 py-4 text-left transition ${
+                    storageMode === "cloud"
+                      ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-100"
+                      : "border-white/8 bg-black/20 text-slate-300"
+                  }`}
+                  onClick={() => setStorageMode("cloud")}
+                >
+                  <span className="font-display block text-lg">Sync</span>
+                  <span className="mt-1 block text-sm text-inherit/80">
+                    Cloud-backed world with account ownership and sync.
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-10 flex justify-end gap-4">

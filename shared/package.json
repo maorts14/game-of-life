@@ -1,0 +1,5 @@
+{
+  "name": "game-of-life-shared",
+  "private": true,
+  "type": "module"
+}

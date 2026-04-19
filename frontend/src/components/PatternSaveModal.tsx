@@ -4,13 +4,15 @@ import type { PatternDefinition } from "../features/game/presets";
 interface PatternSaveModalProps {
   isOpen: boolean;
   patternPreview: PatternDefinition | null;
+  storageLabel: "Local" | "Cloud";
   onClose: () => void;
-  onSave: (values: { name: string; description: string }) => void;
+  onSave: (values: { name: string; description: string }) => void | Promise<void>;
 }
 
 export function PatternSaveModal({
   isOpen,
   patternPreview,
+  storageLabel,
   onClose,
   onSave,
 }: PatternSaveModalProps) {
@@ -44,7 +46,7 @@ export function PatternSaveModal({
         className="panel ghost-border w-full max-w-lg rounded-[28px] px-8 py-8"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/70">New Pattern</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/70">{storageLabel} Pattern</p>
         <h2 className="font-display mt-3 text-4xl text-white">Save captured selection</h2>
 
         <div className="mt-8 space-y-6">
@@ -73,6 +75,9 @@ export function PatternSaveModal({
               placeholder="Describe what this pattern does."
             />
           </label>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+            {storageLabel === "Cloud" ? "Stored in your cloud account" : "Stored only on this device"}
+          </p>
 
           {patternPreview ? (
             <div className="block">

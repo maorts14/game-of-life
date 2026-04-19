@@ -62,7 +62,7 @@ export function AboutScreen() {
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">The Engine</p>
             <p className="mt-4 text-lg leading-8 text-slate-200">
               This app lets you create worlds, paint cells or add patterns directly on the simulation canvas, randomize the board, step
-              one generation at a time and run continuous playback.
+              one generation at a time, run continuous playback, and keep worlds either local-first or synced to the cloud.
             </p>
           </section>
 
